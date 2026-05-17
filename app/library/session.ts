@@ -6,9 +6,9 @@ import { SignJWT, jwtVerify } from 'jose';
 const sessionCookie: string = "session";
 const sessionDurationMs: number = 7 * 24 * 60 * 60 * 1000;
 
-const secert = process.env.SESSION_SECRET;
-if (!secert) throw new Error("A Session Secret is required");
-const encodedKey = new TextEncoder().encode(secert);
+const secret = process.env.SESSION_SECRET;
+if (!secret) throw new Error("A Session Secret is required");
+const encodedKey = new TextEncoder().encode(secret);
 
 export type Session = {
     user: {
@@ -90,6 +90,6 @@ export async function createSession(user: Session["user"]) {
 }
 
 export async function deleteSession() {
-    const theCookiteStore = await cookies();
-    theCookiteStore.delete(sessionCookie);
+    const theCookieStore = await cookies();
+    theCookieStore.delete(sessionCookie);
 }
