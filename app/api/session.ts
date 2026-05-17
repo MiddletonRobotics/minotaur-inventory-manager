@@ -3,10 +3,10 @@ import 'server-only';
 import { cookies } from 'next/headers';
 import { SignJWT, jwtVerify } from 'jose';
 
-const sessionCookie = "session";
-const sessionDurationMs = 7 * 24 * 60 * 60 * 1000;
+const sessionCookie: string = "session";
+const sessionDurationMs: number = 7 * 24 * 60 * 60 * 1000;
 
-const secert = process.env.SESSION_SECERT;
+const secert = process.env.SESSION_SECRET;
 if (!secert) throw new Error("A Session Secret is required");
 const encodedKey = new TextEncoder().encode(secert);
 
