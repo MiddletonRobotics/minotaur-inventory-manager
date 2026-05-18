@@ -15,7 +15,10 @@ enum Role {
 model User {
     id Int @id @default(autoincrement())
     type Role @default(STANDARD)
-    firstName String @unique
-    lastName String @unique
+    firstName String 
+    lastName String 
+    pwdHash String
     createdAt DateTime @default(now())
+    
+    @@unique([firstName, lastName])
 }
