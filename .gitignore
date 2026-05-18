@@ -47,5 +47,5 @@ yarn-error.log*
 next-env.d.ts
 
 # prisma
-/app/prisma/generated
-/app/prisma/migrations
+/prisma/generated
+/prisma/migrations
