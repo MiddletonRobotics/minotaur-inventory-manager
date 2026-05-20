@@ -6,4 +6,10 @@ import { logout } from '@/server/auth';
 
 export default async function Navbar() {
     const session = await authenticate();
+
+    return (
+        <header>
+            
+        </header>
+    )
 }
