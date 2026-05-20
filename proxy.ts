@@ -27,8 +27,6 @@ export async function proxy(request: NextRequest) {
     const token = request.cookies.get(sessionCookieName)?.value;
     const authed = await isValidSession(token);
 
-    console.log('[proxy]', pathname, { hasToken: !!token, authed });
-
     if (!isPublic && !authed) {
         const url = request.nextUrl.clone();
         url.pathname = "/login";
