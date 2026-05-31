@@ -1,9 +1,9 @@
 import 'server-only';
-
 import { cookies } from 'next/headers';
 import { SignJWT, jwtVerify } from 'jose';
 
 const sessionCookie: string = "session";
+const sessionCookieStore: string = "sessions_store"
 const sessionDurationMs: number = 7 * 24 * 60 * 60 * 1000;
 
 const secret = process.env.SESSION_SECRET;
@@ -28,6 +28,16 @@ type SessionPayload = {
     expiresAt: string
 }
 
+export type StoredSessionSummary = {
+    userId: string,
+    firstName: string,
+    lastName: string,
+    isAdmin: boolean,
+    expiresAt: string,
+    isValid: boolean,
+    token: string
+}
+
 async function encrypt(payload: SessionPayload) : Promise<string> {
     return new SignJWT(payload)
         .setProtectedHeader({ alg: "HS256" })
@@ -38,10 +48,7 @@ async function encrypt(payload: SessionPayload) : Promise<string> {
 
 async function decrypt(token: string) : Promise<SessionPayload | null> {
     try {
-        const { payload } = await jwtVerify(token, encodedKey, {
-            algorithms: ["HS256"]
-        });
-
+        const { payload } = await jwtVerify(token, encodedKey, { algorithms: ["HS256"] });
         return payload as SessionPayload;
     } catch {
         return null;
@@ -49,13 +56,12 @@ async function decrypt(token: string) : Promise<SessionPayload | null> {
 }
 
 export async function authenticate() : Promise<Session | null> {
-    const theCookieStore = await cookies();
-    const token = theCookieStore.get(sessionCookie)?.value;
+    const store = await cookies();
+    const token = store.get(sessionCookie)?.value;
     if(!token) return null;
 
     const payload = await decrypt(token);
     if(!payload) return null;
-
     if (new Date(payload.expiresAt) < new Date()) return null;
 
     return {
@@ -79,8 +85,40 @@ export async function createSession(user: Session["user"]) {
         expiresAt: expiresAt.toISOString()
     });
 
-    const theCookieStore = await cookies();
-    theCookieStore.set(sessionCookie, token,{
+    const store = await cookies();
+    store.set(sessionCookie, token,{
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        expires: expiresAt,
+        path: "/"
+    });
+
+    await upsertStoredSession(token);
+}
+
+export async function deleteSession() {
+    const store = await cookies();
+    store.delete(sessionCookie);
+}
+
+async function getStoredTokens() : Promise<string[]> {
+    const store = await cookies();
+    const raw = store.get(sessionCookieStore)?.value;
+    if(!raw) return [];
+
+    try {
+        return JSON.parse(raw) as string[];
+    } catch {
+        return [];
+    }
+}
+
+async function setStoredTokens(tokens: string[]) : Promise<void> {
+    const store = await cookies();
+    const expiresAt = new Date(Date.now() + sessionDurationMs);
+
+    store.set(sessionCookieStore, JSON.stringify(tokens), {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
@@ -89,7 +127,19 @@ export async function createSession(user: Session["user"]) {
     });
 }
 
-export async function deleteSession() {
-    const theCookieStore = await cookies();
-    theCookieStore.delete(sessionCookie);
+async function upsertStoredSession(newToken: string) : Promise<void> {
+    const newPayload = await decrypt(newToken);
+    if(!newPayload) return;
+
+    const existing = await getStoredTokens();
+
+    const filtered: string[] = [];
+    for(const t of existing) {
+        const p = await decrypt(t);
+        if(!p) continue;
+        if(p && p.userId != newPayload.userId) filtered.push(t);
+    }
+
+    filtered.push(newToken);
+    await setStoredTokens(filtered);
 }
