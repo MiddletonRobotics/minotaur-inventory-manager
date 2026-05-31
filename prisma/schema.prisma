@@ -1,24 +1,65 @@
 generator client {
-    provider = "prisma-client"
-    output = "./generated"
+  provider = "prisma-client"
+  output   = "./generated"
 }
 
 datasource db {
-    provider = "postgresql"
+  provider = "postgresql"
 }
 
 enum Role {
-    STANDARD
-    ADMIN
+  STANDARD
+  MANAGER
+  ADMINISTRATOR
+}
+
+enum Vendor {
+  WCP
+  VEX
+  ANDYMARK
+  THRIFTYBOT
+  REV
+  CTRE
+  MCMASTER
+  LIMELIGHT
 }
 
 model User {
-    id Int @id @default(autoincrement())
-    type Role @default(STANDARD)
-    firstName String 
-    lastName String 
-    pwdHash String
-    createdAt DateTime @default(now())
-    
-    @@unique([firstName, lastName])
+  id        Int      @id @default(autoincrement())
+  type      Role     @default(STANDARD)
+  firstName String
+  lastName  String
+  pwdHash   String
+  createdAt DateTime @default(now())
+
+  @@unique([firstName, lastName])
+}
+
+model Category {
+  id Int @id @default(autoincrement())
+  name String @unique
+  parentId Int?
+  parent Category? @relation("CategoryTree", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryTree")
+  items Item[]
+  createdAt DateTime @default(now())
+  @@unique([name, parentId])
+}
+
+model Item {
+  id Int @id @default(autoincrement())
+  name String
+  partNumber String @unique
+  description String
+  categoryId Int
+  category Category @relation(fields: [categoryId], references: [id])
+  vendor Vendor
+  material String?
+  location String?
+  quantity Int @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([categoryId])
+  @@index([partNumber])
 }
