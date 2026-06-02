@@ -3,6 +3,8 @@ import { Settings } from 'lucide-react';
 import { authenticate, getStoredSessions } from '@/lib/session';
 import UserSwitcher from '@/components/userSwitcher';
 import { logout } from '@/server/auth';
+import Image from 'next/image';
+import logo from '../public/logo.png'
 
 const navItems = [
     { href: '/inventory', label: 'Inventory' },
@@ -17,7 +19,7 @@ export default async function Navbar() {
         <header className="h-[60px] w-full border-b border-border bg-bg flex items-center justify-between px-6">
             <div className="flex tiems-cetner gap-2">
                 <Link href="/" className="flex items-center gap-2">
-                    <div className="h-7 w-7 rounded-md bg-accent" />
+                    <Image src={logo} alt="Minotaur Logo" width={28} height={28} className="rounded-md" />
                     <span className="text-sm">MinoManager</span>
                 </Link>
 
