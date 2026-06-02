@@ -143,3 +143,45 @@ async function upsertStoredSession(newToken: string) : Promise<void> {
     filtered.push(newToken);
     await setStoredTokens(filtered);
 }
+
+export async function getStoredSessions() : Promise<StoredSessionSummary[]> {
+    const tokens = await getStoredTokens();
+    const results: StoredSessionSummary[] = [];
+
+    for (const token of tokens) {
+        const payload = await decrypt(token);
+        if (!payload) continue;
+
+        const isValid = new Date(payload.expiresAt) > new Date();
+        results.push({
+            userId:    payload.userId,
+            firstName: payload.firstName,
+            lastName:  payload.lastName,
+            isAdmin:   payload.isAdmin,
+            expiresAt: payload.expiresAt,
+            isValid,
+            token,
+        });
+    }
+
+    return results;
+}
+
+export async function switchToSession(token: string): Promise<Boolean> {
+    const payload = await decrypt(token);
+    if (!payload) return false;
+    if (new Date(payload.expiresAt) > new Date()) return false;
+
+    const store = await cookies();
+    const expiresAt = new Date(payload.expiresAt);
+
+    store.set(sessionCookie, token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV == "production",
+        sameSite: "lax",
+        expires: expiresAt,
+        path: "/",
+    });
+
+    return true;
+}
