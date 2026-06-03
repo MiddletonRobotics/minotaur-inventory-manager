@@ -13,9 +13,9 @@ async function main() {
     const firstName = await rl.question('First name: ');
     const lastName = await rl.question('Last name: ');
     const password = await rl.question('Password: ');
-    const typeIn = await rl.question('Type (1=Standard, 2=Admin): ');
+    const typeIn = await rl.question('Type (1=Standard, 2=Manager, 3=Administrator): ');
 
-    const type = typeIn.trim() === '2' ? 'ADMIN' : 'STANDARD';
+    const type = typeIn.trim() === '3' ? 'ADMINISTRATOR' : (typeIn.trim() === '2' ? 'MANAGER' : 'STANDARD');
     const pwdHash = await hash(password, 12);
 
     const user = await prisma.user.create({

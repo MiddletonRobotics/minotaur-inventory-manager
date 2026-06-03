@@ -49,7 +49,7 @@ export async function login(_prev: LoginState, formData: FormData) : Promise<Log
         id: String(user.id),
         firstName: user.firstName,
         lastName: user.lastName,
-        isAdmin: user.type === 'ADMIN'
+        isAdmin: user.type === 'ADMINISTRATOR'
      });
 
      redirect('/');
