@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Settings } from 'lucide-react';
+import { LogIn, Settings } from 'lucide-react';
 import { authenticate, getStoredSessions } from '@/lib/session';
 import UserSwitcher from '@/components/userSwitcher';
 import { logout } from '@/server/auth';
@@ -25,7 +25,7 @@ export default async function Navbar() {
 
                 <nav className="flex items-center gap-1">
                     {navItems.map((link) => (
-                        <Link key={link.href} href={link.href} className="px-3 py-1.5 rounded-md text-sm text-fg-muted transition-colors hover:bg-accent/15 hover:text-fg">
+                        <Link key={link.href} href={link.href} className="px-3 py-1.5 rounded-md text-sm transition-colors hover:bg-accent/15 hover:text-fg">
                             {link.label}
                         </Link>
                     ))}
@@ -33,7 +33,7 @@ export default async function Navbar() {
             </div>
 
             <div className="flex items-center gap-1">
-                <Link href="/settings" aria-label="Settings" className="p-2 rounded-md text-fg-muted transition-colors hover:bg-accent/15 hover:text-fg">
+                <Link href="/settings" aria-label="Settings" className="p-2 rounded-md transition-colors hover:bg-accent/15 hover:text-fg">
                     <Settings size={16} />
                 </Link>
 
@@ -42,12 +42,8 @@ export default async function Navbar() {
                 )}
 
                 <form action={logout}>
-                    <button type="submit" aria-label="Logout" className="p-2 rounded-md text-fg-muted transition-colors hover:bg-accent/15 hover:text-fg">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                            <polyline points="16 17 21 12 16 7" />
-                            <line x1="21" y1="12" x2="9" y2="12" />
-                        </svg>
+                    <button type="submit" aria-label="Logout" className="p-2 rounded-md transition-colors hover:bg-accent/15 hover:text-fg">
+                        <LogIn size={16} />
                     </button>
                 </form>
             </div>
