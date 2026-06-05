@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { LogIn, Settings } from 'lucide-react';
+import { LogOut, Settings } from 'lucide-react';
 import { authenticate, getStoredSessions } from '@/lib/session';
 import UserSwitcher from '@/components/userSwitcher';
 import { logout } from '@/server/auth';
@@ -43,7 +43,7 @@ export default async function Navbar() {
 
                 <form action={logout}>
                     <button type="submit" aria-label="Logout" className="p-2 rounded-md transition-colors hover:bg-accent/15 hover:text-fg">
-                        <LogIn size={16} />
+                        <LogOut size={16} />
                     </button>
                 </form>
             </div>
