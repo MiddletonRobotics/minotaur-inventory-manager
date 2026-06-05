@@ -5,8 +5,7 @@ import { compare } from 'bcryptjs';
 import { redirect } from 'next/navigation';
 
 import prisma from '../prisma/prisma';
-import { createSession, deleteSession } from '../lib/session';
-import { switchToSession, getStoredSessions } from '../lib/session';
+import { createSession, deleteSession, switchToSession, getStoredSessions } from '../lib/session';
 
 const LoginSchema = z.object({
     firstName: z.string().trim().min(1).max(50),
@@ -60,14 +59,8 @@ export async function logout() : Promise<never> {
     redirect('/login');
 }
 
-export async function switchUser(token: string) : Promise<void> {
-    const success = await switchToSession(token);
-
-    if (!success) {
-        redirect('/login')
-    }
-
-    redirect('/')
+export async function switchUser(token: string) : Promise<boolean> {
+    return switchToSession(token)
 }
 
 export async function fetchStoredSessions() {
