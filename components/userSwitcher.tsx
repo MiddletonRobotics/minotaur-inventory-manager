@@ -79,20 +79,12 @@ export default function UserSwitcher({ currentUserId, sessions }: Props) {
 
     function handleSwitch(token: string, isValid: boolean) {
         if (!isValid) {
-            router.push('/login');
+            router.push('/login?addSession=1');
             return;
         }
 
         startTransition(async () => {
-            const success = await switchUser(token);
-
-            if (!success) {
-                router.push('/login');
-                return;
-            }
-
-            setOpen(false);
-            router.refresh();
+            await switchUser(token);
         });
     }
 
@@ -123,7 +115,7 @@ export default function UserSwitcher({ currentUserId, sessions }: Props) {
                     )}
 
                     {others.map(s => (
-                        <button key={s.userId} type="button" role="option" onClick={() => handleSwitch(s.token, s.isValid)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition-colors hover:bg-accent/15">
+                        <button key={s.userId} type="button" role="option" onClick={() => handleSwitch(s.userId, s.isValid)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition-colors hover:bg-accent/15">
                             <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${s.isValid ? 'bg-green-500' : 'bg-red-500'}`} />
                             <span className="flex-1 truncate">{displayName(s.firstName, s.lastName)}</span>
 

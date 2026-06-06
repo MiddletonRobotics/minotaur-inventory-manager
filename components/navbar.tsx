@@ -17,7 +17,7 @@ export default async function Navbar() {
 
     return (
         <header className="h-[60px] w-full border-b border-border bg-bg flex items-center justify-between px-6">
-            <div className="flex tiems-cetner gap-2">
+            <div className="flex tiems-center gap-2">
                 <Link href="/" className="flex items-center gap-2">
                     <Image src={logo} alt="Minotaur Logo" width={28} height={28} className="rounded-md" />
                     <span className="text-sm">MinoManager</span>
