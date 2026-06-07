@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { LogOut, Settings } from 'lucide-react';
-import { authenticate, getStoredSessions } from '@/lib/session';
-import UserSwitcher from '@/components/userSwitcher';
+import { authenticate } from '@/lib/session';
 import { logout } from '@/server/auth';
 import Image from 'next/image';
 import logo from '../public/logo.png'
@@ -11,9 +10,12 @@ const navItems = [
     { href: '/projects', label: 'Projects' },
 ]
 
+function displayName(firstName: string, lastName: string): string {
+    return `${firstName} ${lastName.charAt(0).toUpperCase()}.`;
+}
+
 export default async function Navbar() {
     const session = await authenticate();
-    const sessions = await getStoredSessions();
 
     return (
         <header className="h-[60px] w-full border-b border-border bg-bg flex items-center justify-between px-6">
@@ -37,9 +39,10 @@ export default async function Navbar() {
                     <Settings size={16} />
                 </Link>
 
-                {session && (
-                    <UserSwitcher currentUserId={session.user.id} sessions={sessions} />
-                )}
+                <div className="flex h-8 items-center gap-1.5 rounded-md px-2 text-xs font-medium leading-none transition-colors hover:bg-accent/15 hover:text-fg disabled:opacity-50">
+                    <span className="h-1.5 w-1.5 rounded-full shrink-0 bg-green-500" />
+                    <span className="max-w-[150px] truncate text-xs">{session == null ? 'Unknown' : displayName(session.user.firstName, session.user.lastName)}</span>
+                </div>
 
                 <form action={logout}>
                     <button type="submit" aria-label="Logout" className="p-2 rounded-md transition-colors hover:bg-accent/15 hover:text-fg">
