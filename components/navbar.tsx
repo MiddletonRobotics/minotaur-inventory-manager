@@ -26,7 +26,7 @@ export default async function Navbar() {
                     <span className="text-base tracking-tight text-fg">MinoManager</span>
                 </Link>
 
-                <nav className="flex items-center gap-6 pl-2">
+                <nav className="flex items-center gap-10 pl-2">
                     {navItems.map((link) => (
                         <Link key={link.href} href={link.href} className="relative py-2 text-sm font-medium text-fg-muted transition-colors hover:text-fg group">
                             {link.label}
