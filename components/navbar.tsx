@@ -1,53 +1,56 @@
 import Link from 'next/link';
-import { Settings } from 'lucide-react';
-import { authenticate, getStoredSessions } from '@/lib/session';
-import UserSwitcher from '@/components/userSwitcher';
+import { LogOut, Settings } from 'lucide-react';
+import { authenticate } from '@/lib/session';
 import { logout } from '@/server/auth';
 import Image from 'next/image';
 import logo from '../public/logo.png'
 
 const navItems = [
     { href: '/inventory', label: 'Inventory' },
+    { href: '/checkout', label: 'Checkout' },
     { href: '/projects', label: 'Projects' },
 ]
 
+function displayName(firstName: string, lastName: string): string {
+    return `${firstName} ${lastName.charAt(0).toUpperCase()}.`;
+}
+
 export default async function Navbar() {
     const session = await authenticate();
-    const sessions = await getStoredSessions();
 
     return (
-        <header className="h-[60px] w-full border-b border-border bg-bg flex items-center justify-between px-6">
-            <div className="flex tiems-cetner gap-2">
-                <Link href="/" className="flex items-center gap-2">
-                    <Image src={logo} alt="Minotaur Logo" width={28} height={28} className="rounded-md" />
-                    <span className="text-sm">MinoManager</span>
+        <header className="h-[60px] w-full border-b border-border bg-bg/95 backdrop-blur-sm flex items-center justify-between px-6 sticky top-0 z-50">
+            <div className="flex items-center gap-6"> 
+                <Link href="/" className="flex items-center gap-2.5 group">
+                    <Image src={logo} alt="Minotaur Logo" width={30} height={30} className="rounded-md transition-transform group-hover:scale-105" />
+                    <span className="text-base tracking-tight text-fg">MinoManager</span>
                 </Link>
 
-                <nav className="flex items-center gap-1">
+                <nav className="flex items-center gap-6 pl-2">
                     {navItems.map((link) => (
-                        <Link key={link.href} href={link.href} className="px-3 py-1.5 rounded-md text-sm text-fg-muted transition-colors hover:bg-accent/15 hover:text-fg">
+                        <Link key={link.href} href={link.href} className="relative py-2 text-sm font-medium text-fg-muted transition-colors hover:text-fg group">
                             {link.label}
+                            <span className="absolute bottom-0 left-0 h-[2px] w-full scale-x-0 bg-fg transition-transform duration-250 ease-out group-hover:scale-x-100" />
                         </Link>
                     ))}
                 </nav>
             </div>
 
-            <div className="flex items-center gap-1">
-                <Link href="/settings" aria-label="Settings" className="p-2 rounded-md text-fg-muted transition-colors hover:bg-accent/15 hover:text-fg">
-                    <Settings size={16} />
+            <div className="flex items-center gap-2">
+                <Link href="/settings" aria-label="Settings" className="relative p-2 text-fg-muted transition-colors hover:text-fg group">
+                    <Settings size={18} />
+                    <span className="absolute bottom-0 left-1/2 h-[2px] w-6 -translate-x-1/2 scale-x-0 bg-fg transition-transform duration-250 ease-out group-hover:scale-x-100" />
                 </Link>
 
-                {session && (
-                    <UserSwitcher currentUserId={session.user.id} sessions={sessions} />
-                )}
+                <div className="flex h-8 items-center gap-2 rounded-full border border-border bg-accent/5 px-3 py-1 text-xs font-medium text-fg">
+                    <span className="h-1.5 w-1.5 rounded-full shrink-0 bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
+                    <span className="max-w-[150px] truncate">{session == null ? 'Unknown' : displayName(session.user.firstName, session.user.lastName)}</span>
+                </div>
 
                 <form action={logout}>
-                    <button type="submit" aria-label="Logout" className="p-2 rounded-md text-fg-muted transition-colors hover:bg-accent/15 hover:text-fg">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                            <polyline points="16 17 21 12 16 7" />
-                            <line x1="21" y1="12" x2="9" y2="12" />
-                        </svg>
+                    <button type="submit" aria-label="Logout" className="relative p-2 text-fg-muted transition-colors hover:text-fg group">
+                        <LogOut size={18} />
+                        <span className="absolute bottom-0 left-1/2 h-[2px] w-6 -translate-x-1/2 scale-x-0 bg-destructive transition-transform duration-250 ease-out group-hover:scale-x-100" />
                     </button>
                 </form>
             </div>

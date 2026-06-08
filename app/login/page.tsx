@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useActionState } from "react";
+import { useActionState } from "react";
 import { login, type LoginState } from '@/server/auth';
 
 export default function Login() {
