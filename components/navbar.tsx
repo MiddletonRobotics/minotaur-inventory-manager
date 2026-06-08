@@ -23,19 +23,23 @@ export default async function Navbar() {
             <div className="flex items-center gap-6"> 
                 <Link href="/" className="flex items-center gap-2.5 group">
                     <Image src={logo} alt="Minotaur Logo" width={30} height={30} className="rounded-md transition-transform group-hover:scale-105" />
-                    <span className="text-sm tracking-tight text-fg">MinoManager</span>
+                    <span className="text-base tracking-tight text-fg">MinoManager</span>
                 </Link>
 
-                <nav className="flex items-center gap-1">
+                <nav className="flex items-center gap-6 pl-2">
                     {navItems.map((link) => (
-                        <Link key={link.href} href={link.href} className="px-3 py-1.5 rounded-md text-sm font-medium text-fg-muted transition-colors hover:text-fg group">{link.label}</Link>
+                        <Link key={link.href} href={link.href} className="relative py-2 text-sm font-medium text-fg-muted transition-colors hover:text-fg group">
+                            {link.label}
+                            <span className="absolute bottom-0 left-0 h-[2px] w-full scale-x-0 bg-fg transition-transform duration-250 ease-out group-hover:scale-x-100" />
+                        </Link>
                     ))}
                 </nav>
             </div>
 
             <div className="flex items-center gap-2">
-                <Link href="/settings" aria-label="Settings" className="p-2 rounded-md text-fg-muted transition-colors hover:text-fg group">
+                <Link href="/settings" aria-label="Settings" className="relative p-2 text-fg-muted transition-colors hover:text-fg group">
                     <Settings size={18} />
+                    <span className="absolute bottom-0 left-1/2 h-[2px] w-6 -translate-x-1/2 scale-x-0 bg-fg transition-transform duration-250 ease-out group-hover:scale-x-100" />
                 </Link>
 
                 <div className="flex h-8 items-center gap-2 rounded-full border border-border bg-accent/5 px-3 py-1 text-xs font-medium text-fg">
@@ -44,8 +48,9 @@ export default async function Navbar() {
                 </div>
 
                 <form action={logout}>
-                    <button type="submit" aria-label="Logout" className="p-2 rounded-md text-fg-muted transition-colors hover:text-fg group">
+                    <button type="submit" aria-label="Logout" className="relative p-2 text-fg-muted transition-colors hover:text-fg group">
                         <LogOut size={18} />
+                        <span className="absolute bottom-0 left-1/2 h-[2px] w-6 -translate-x-1/2 scale-x-0 bg-destructive transition-transform duration-250 ease-out group-hover:scale-x-100" />
                     </button>
                 </form>
             </div>
