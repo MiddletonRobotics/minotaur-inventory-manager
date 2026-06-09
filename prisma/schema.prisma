@@ -24,6 +24,11 @@ enum Vendor {
   LIMELIGHT
 }
 
+enum ProjectStatus {
+  ACTIVE
+  ARCHIVED
+}
+
 model User {
   id        Int      @id @default(autoincrement())
   type      Role     @default(STANDARD)
@@ -31,6 +36,10 @@ model User {
   lastName  String
   pwdHash   String
   createdAt DateTime @default(now())
+
+  projectsCreated   Project[]         @relation("ProjectCreatedBy")
+  checkoutsCreated  ProjectCheckout[] @relation("CheckoutCheckedOutBy")
+  checkoutsModified ProjectCheckout[] @relation("CheckoutModifiedBy")
 
   @@unique([firstName, lastName])
 }
@@ -48,19 +57,52 @@ model Category {
 }
 
 model Item {
-  id          Int      @id @default(autoincrement())
+  id          Int               @id @default(autoincrement())
   name        String
-  partNumber  String   @unique
+  partNumber  String            @unique
   description String
   categoryId  Int
-  category    Category @relation(fields: [categoryId], references: [id])
+  category    Category          @relation(fields: [categoryId], references: [id])
   vendor      Vendor
   material    String?
   location    String?
-  quantity    Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  quantity    Int               @default(0)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  checkouts   ProjectCheckout[]
 
   @@index([categoryId])
   @@index([partNumber])
+}
+
+model Project {
+  id            Int               @id @default(autoincrement())
+  name          String            @unique
+  description   String?
+  status        ProjectStatus     @default(ACTIVE)
+  checkouts     ProjectCheckout[]
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  createdById   Int
+  createdByUser User              @relation("ProjectCreatedBy", fields: [createdById], references: [id])
+}
+
+model ProjectCheckout {
+  id                 Int      @id @default(autoincrement())
+  projectId          Int
+  project            Project  @relation(fields: [projectId], references: [id])
+  partId             Int
+  part               Item     @relation(fields: [partId], references: [id])
+  quantityCheckedOut Int
+  note               String?
+  checkedOutAt       DateTime @default(now())
+  checkedOutById     Int
+  checkedOutBy       User     @relation("CheckoutCheckedOutBy", fields: [checkedOutById], references: [id])
+  lastModifiedAt     DateTime @updatedAt
+  lastModifiedById   Int?
+  lastModifiedBy     User?    @relation("CheckoutModifiedBy", fields: [lastModifiedById], references: [id])
+
+  @@unique([projectId, partId])
+  @@index([projectId])
+  @@index([partId])
 }
