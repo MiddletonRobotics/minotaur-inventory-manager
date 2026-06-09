@@ -12,7 +12,7 @@
   --color-accent: #ab0000;
   --color-accent-hover: #c40000;
 
-  --font-sans: var(--font-unbounded);
+  --font-sans: var(--font-bricolage);
 }
 
 body {
