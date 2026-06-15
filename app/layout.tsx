@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { Unbounded } from "next/font/google";
+import { Bricolage_Grotesque } from "next/font/google";
 import './globals.css';
 
-const unbounded = Unbounded({ 
+const bricolage = Bricolage_Grotesque({ 
   subsets: ['latin'], 
-  weight: ['400'],
-  variable: '--font-unbounded'
+  weight: ['300', '400', '500', '600', '700'],
+  variable: '--font-bricolage'
 });
 
 export const metadata: Metadata = {
@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children } : Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${unbounded.variable} h-full antialiased`}>
+    <html lang="en" className={`${bricolage.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
         {children}
       </body>

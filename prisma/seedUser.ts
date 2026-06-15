@@ -33,4 +33,7 @@ async function main() {
     await prisma.$disconnect();
 }
 
-main();
+main().catch(error => {
+    console.error(error);
+    process.exit(1)
+})
