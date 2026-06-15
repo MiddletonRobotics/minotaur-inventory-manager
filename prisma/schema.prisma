@@ -30,7 +30,7 @@ enum ProjectStatus {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
+  id        Int      @id @default(dbgenerated("floor(random() * 90000000 + 10000000)::int"))
   type      Role     @default(STANDARD)
   firstName String
   lastName  String
@@ -45,7 +45,7 @@ model User {
 }
 
 model Category {
-  id        Int        @id @default(autoincrement())
+  id        Int        @id @default(dbgenerated("floor(random() * 90000000 + 10000000)::int"))
   name      String     @unique
   parentId  Int?
   parent    Category?  @relation("CategoryTree", fields: [parentId], references: [id])
@@ -57,7 +57,7 @@ model Category {
 }
 
 model Item {
-  id          Int               @id @default(autoincrement())
+  id          Int               @id @default(dbgenerated("floor(random() * 90000000 + 10000000)::int"))
   name        String
   partNumber  String            @unique
   description String
@@ -76,7 +76,7 @@ model Item {
 }
 
 model Project {
-  id            Int               @id @default(autoincrement())
+  id            Int               @id @default(dbgenerated("floor(random() * 90000000 + 10000000)::int"))
   name          String            @unique
   description   String?
   status        ProjectStatus     @default(ACTIVE)
@@ -88,7 +88,7 @@ model Project {
 }
 
 model ProjectCheckout {
-  id                 Int      @id @default(autoincrement())
+  id                 Int      @id @default(dbgenerated("floor(random() * 90000000 + 10000000)::int"))
   projectId          Int
   project            Project  @relation(fields: [projectId], references: [id])
   partId             Int
