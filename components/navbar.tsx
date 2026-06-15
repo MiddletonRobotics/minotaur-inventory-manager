@@ -42,7 +42,7 @@ export default async function Navbar() {
                     <span className="absolute bottom-0 left-1/2 h-[2px] w-6 -translate-x-1/2 scale-x-0 bg-fg transition-transform duration-250 ease-out group-hover:scale-x-100" />
                 </Link>
 
-                <div className="flex h-8 items-center gap-2 rounded-full border border-border bg-accent/5 px-3 py-1 font-medium text-fg">
+                <div className="flex h-8 items-center gap-2 rounded-full border border-border px-3 py-1 font-medium text-fg">
                     <span className="h-1.5 w-1.5 rounded-full shrink-0 bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
                     <span className="max-w-[150px] truncate text-sm">{session == null ? 'Unknown' : displayName(session.user.firstName, session.user.lastName)}</span>
                 </div>
