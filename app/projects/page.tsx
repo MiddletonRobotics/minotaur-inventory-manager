@@ -17,7 +17,7 @@ export default async function Projects() {
                     <h1 className="text-center text-4xl font-black tracking-[0.2em] text-white uppercase mb-16">Projects</h1>
 
                     {projects.length === 0 ? (
-                        <p className="text-xl font-bold text-zinc-300 tracking-wide">There are currently no active projects!</p>
+                        <p className="text-xl text-center text-fg-muted font-bold tracking-wide">There are currently no active projects!</p>
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch">
                             {projects.map((project) => (
