@@ -22,7 +22,7 @@
     "react-dom": "19.2.7",
     "zod": "^4.4.3",
     "tsx": "4.20.6",
-    "typescript": "^6"
+    "typescript": "^7"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
