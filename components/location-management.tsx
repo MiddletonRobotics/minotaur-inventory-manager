@@ -43,7 +43,7 @@ export function StorageLocationManagement({ locations }: Props) {
                 {locations.map((location) => (
                     <div key={location.id} className="flex items-center justify-between py-2">
                         <span className="text-sm text-fg">{location.name}</span>
-                        
+
                         <DeleteLocationButton location={location} />
                     </div>
                 ))}
