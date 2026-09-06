@@ -1,8 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { jwtVerify } from "jose";
+import prisma from "@/prisma/prisma";
 
 const sessionCookieName = "session";
-const path = ["/login"];
+const publicPaths = ["/login"];
 
 const secret = process.env.SESSION_SECRET;
 if (!secret) throw new Error("A Session Secret is required");
@@ -14,9 +15,17 @@ async function isValidSession(token: string | undefined): Promise<boolean> {
     try {
         const { payload } = await jwtVerify(token, encodedKey, { algorithms: ["HS256"] });
         const expiresAt = payload.expiresAt;
+        const userId = Number(payload.userId);
 
-        if (typeof expiresAt !== "string") return false;
-        return new Date(expiresAt) > new Date();
+        if (typeof expiresAt !== "string" || !Number.isInteger(userId)) return false;
+        if (new Date(expiresAt) <= new Date()) return false;
+
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { active: true },
+        });
+
+        return user?.active === true;
     } catch (error) {
         console.error(error);
         return false;
@@ -25,8 +34,7 @@ async function isValidSession(token: string | undefined): Promise<boolean> {
 
 export async function proxy(request: NextRequest) {
     const { pathname, searchParams } = request.nextUrl;
-
-    const isPublic = path.some((p) => pathname === p || pathname.startsWith(p + "/"));
+    const isPublic = publicPaths.some((publicPath) => pathname === publicPath || pathname.startsWith(`${publicPath}/`));
     const isAddingSession = pathname === "/login" && searchParams.get("addSession") === "1";
     const token = request.cookies.get(sessionCookieName)?.value;
     const authed = await isValidSession(token);

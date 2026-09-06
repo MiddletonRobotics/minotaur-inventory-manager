@@ -12,7 +12,7 @@
 .projects-title {
     margin-bottom: 4rem;
     color: var(--color-fg);
-    font-family: var(--font-bricolage);
+    font-family: var(--font-dmsans);
     font-size: 2.25rem;
     font-weight: 700;
     letter-spacing: 0.1em;
@@ -29,23 +29,21 @@
 }
 
 .projects-grid {
-    display: grid;
-    grid-template-columns: repeat(1, minmax(0, 1fr));
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
     gap: 2rem;
 }
 
 .project-card {
     display: flex;
     aspect-ratio: 5 / 6;
+    width: 100%;
     flex-direction: column;
     align-items: center;
     justify-content: space-between;
-    border-top: 0.125rem solid color-mix(in srgb, var(--color-accent) 80%, transparent);
-    border-right: 0.125rem solid color-mix(in srgb, var(--color-accent) 80%, transparent);
-    border-bottom: 0.125rem solid color-mix(in srgb, var(--color-accent) 80%, transparent);
-    border-left: 0.125rem solid color-mix(in srgb, var(--color-accent) 80%, transparent);
-    border-radius: 0.5rem;
-    background-color: #181818;
+    border-radius: 0.25rem;
+    background-color: var(--color-accent);
     padding: 2rem;
     text-align: center;
 }
@@ -99,13 +97,13 @@
         padding-inline: 2rem;
     }
 
-    .projects-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+    .project-card {
+        width: calc((100% - 2rem) / 2);
     }
 }
 
 @media (min-width: 1024px) {
-    .projects-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+    .project-card {
+        width: calc((100% - 4rem) / 3);
     }
 }

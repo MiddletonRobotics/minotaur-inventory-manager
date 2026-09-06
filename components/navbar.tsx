@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { LogOut, Settings } from "lucide-react";
-import { authenticate } from "@/lib/session";
+import { authenticate } from "@/server/session";
 import { logout } from "@/server/auth";
 import Image from "next/image";
 import logo from "../public/logo.png";

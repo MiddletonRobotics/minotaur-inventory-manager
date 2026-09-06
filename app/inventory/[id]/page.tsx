@@ -4,22 +4,19 @@ import { notFound } from "next/navigation";
 import Navbar from "@/components/navbar";
 import prisma from "@/prisma/prisma";
 
-type InventoryCategoryPageProps = {
-    params: Promise<{ id: string }>;
-};
+import { AddItemButton, ItemActionsMenu } from "@/components/item-management";
+import { authenticate } from "@/server/session";
+
+type InventoryCategoryPageProps = { params: Promise<{ id: string }> };
 
 export default async function InventoryCategoryPage({ params }: InventoryCategoryPageProps) {
     const { id } = await params;
     const categoryId = Number(id);
 
-    if (!Number.isInteger(categoryId)) {
-        notFound();
-    }
+    if (!Number.isInteger(categoryId)) notFound();
 
     const category = await prisma.category.findUnique({
-        where: {
-            id: categoryId,
-        },
+        where: { id: categoryId },
         include: {
             parent: true,
             children: {
@@ -34,6 +31,9 @@ export default async function InventoryCategoryPage({ params }: InventoryCategor
                 orderBy: { name: "asc" },
                 include: {
                     checkouts: {
+                        where: {
+                            project: { status: "ACTIVE" },
+                        },
                         select: { quantityCheckedOut: true },
                     },
                 },
@@ -41,9 +41,11 @@ export default async function InventoryCategoryPage({ params }: InventoryCategor
         },
     });
 
-    if (!category) {
-        notFound();
-    }
+    if (!category) notFound();
+
+    const session = await authenticate();
+    const isSubcategory = category.parentId !== null;
+    const canManageInventory = session?.user.role === "MANAGER" || session?.user.role === "ADMINISTRATOR";
 
     return (
         <>
@@ -54,7 +56,6 @@ export default async function InventoryCategoryPage({ params }: InventoryCategor
                         <Link href="/inventory" className="transition-colors hover:text-fg">
                             Inventory
                         </Link>
-
                         {category.parent ? (
                             <>
                                 <span>/</span>
@@ -84,6 +85,12 @@ export default async function InventoryCategoryPage({ params }: InventoryCategor
                         </div>
                     ) : null}
 
+                    {isSubcategory && canManageInventory && (
+                        <div className="mb-4">
+                            <AddItemButton categoryId={category.id} categoryName={category.name} />
+                        </div>
+                    )}
+
                     {category.items.length > 0 ? (
                         <div className="overflow-hidden rounded-xl border border-border bg-card">
                             <table className="w-full border-collapse text-left text-sm">
@@ -96,6 +103,7 @@ export default async function InventoryCategoryPage({ params }: InventoryCategor
                                         <th className="px-4 py-3 font-semibold">Total</th>
                                         <th className="px-4 py-3 font-semibold">Used</th>
                                         <th className="px-4 py-3 font-semibold">Available</th>
+                                        {canManageInventory && <th className="px-4 py-3 text-right font-semibold">Actions</th>}
                                     </tr>
                                 </thead>
 
@@ -105,7 +113,7 @@ export default async function InventoryCategoryPage({ params }: InventoryCategor
                                         const available = item.quantity - checkedOut;
 
                                         return (
-                                            <tr key={item.id} className="border-b border-border last:border-b-0">
+                                            <tr key={item.id} className="border-b border-border">
                                                 <td className="px-4 py-3 text-fg">
                                                     <div className="font-medium">{item.name}</div>
                                                     <div className="mt-1 text-xs text-fg-muted">{item.description}</div>
@@ -117,6 +125,11 @@ export default async function InventoryCategoryPage({ params }: InventoryCategor
                                                 <td className="px-4 py-3 text-fg-muted">{item.quantity}</td>
                                                 <td className="px-4 py-3 text-fg-muted">{checkedOut}</td>
                                                 <td className="px-4 py-3 font-semibold text-fg">{available}</td>
+                                                {canManageInventory && (
+                                                    <td className="px-4 py-3 text-right">
+                                                        <ItemActionsMenu itemId={item.id} itemName={item.name} categoryId={category.id} />
+                                                    </td>
+                                                )}
                                             </tr>
                                         );
                                     })}

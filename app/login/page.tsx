@@ -7,43 +7,67 @@ export default function Login() {
     const [state, formAction, pending] = useActionState<LoginState, FormData>(login, undefined);
 
     return (
-        <main className="login-page flex flex-1 items-center justify-center px-4">
-            <form action={formAction} className="login-card w-full max-w-md rounded-xl p-6 space-y-5">
+        <main className="flex flex-1 items-center justify-center px-4">
+            <form action={formAction} className="w-full max-w-130 rounded-xl bg-card p-6 space-y-5">
                 <header className="space-y-1.5">
-                    <h1 className="text-sm text-font">Sign In</h1>
-                    <p className="text-xs text-font-muted">Enter your name and team password</p>
+                    <h1 className="text-lg">Sign In</h1>
+                    <p className="text-base text-fg-muted">Enter your name and team password</p>
                 </header>
 
                 <div className="grid grid-cols-2 gap-2">
-                    <div className="login-form-field">
-                        <label htmlFor="firstName" className="block text-xs text-font">
+                    <div className="space-y-1.5">
+                        <label htmlFor="firstName" className="block text-base">
                             First Name
                         </label>
-                        <input id="firstName" name="firstName" type="text" required placeholder="First Name" autoComplete="given-name" className="login-form-input" />
+                        <input
+                            id="firstName"
+                            name="firstName"
+                            type="text"
+                            required
+                            placeholder="First Name"
+                            autoComplete="given-name"
+                            className="w-full rounded-md bg-input px-2.5 py-2 text-base placeholder:text-fg-dim focus:outline-none"
+                        />
                     </div>
 
-                    <div className="login-form-field">
-                        <label htmlFor="lastName" className="block text-xs text-font">
+                    <div className="space-y-1.5">
+                        <label htmlFor="lastName" className="block text-base">
                             Last Name
                         </label>
-                        <input id="lastName" name="lastName" type="text" required placeholder="Last Name" autoComplete="family-name" className="login-form-input" />
+                        <input
+                            id="lastName"
+                            name="lastName"
+                            type="text"
+                            required
+                            placeholder="Last Name"
+                            autoComplete="family-name"
+                            className="w-full rounded-md bg-input px-2.5 py-2 text-base placeholder:text-fg-dim focus:outline-none"
+                        />
                     </div>
                 </div>
 
-                <div className="login-form-field">
-                    <label htmlFor="password" className="block text-xs text-font">
+                <div className="space-y-1.5">
+                    <label htmlFor="password" className="block text-base">
                         Password
                     </label>
-                    <input id="password" name="password" type="password" required placeholder="Enter Password" autoComplete="current-password" className="login-form-input" />
+                    <input
+                        id="password"
+                        name="password"
+                        type="password"
+                        required
+                        placeholder="Enter Password"
+                        autoComplete="current-password"
+                        className="w-full rounded-md bg-input px-2.5 py-2 text-base placeholder:text-fg-dim focus:outline-none"
+                    />
                 </div>
 
                 {state?.error && (
-                    <p role="alert" className="text-xs text-accent">
+                    <p role="alert" className="text-base text-accent">
                         {state.error}
                     </p>
                 )}
 
-                <button type="submit" disabled={pending} className="w-full rounded-full bg-accent py-2.5 text-sm text-fg text-font hover:bg-accent-hover disabled:opacity-60 disabled:cursor-not-allowed transition-colors">
+                <button type="submit" disabled={pending} className="w-full rounded-full bg-accent py-2.5 text-base text-fg hover:bg-accent-hover disabled:opacity-60 disabled:cursor-not-allowed transition-colors">
                     {pending ? "Signing In..." : "Sign In"}
                 </button>
             </form>

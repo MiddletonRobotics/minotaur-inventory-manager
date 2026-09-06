@@ -6,7 +6,8 @@
         "dev": "next dev",
         "build": "next build",
         "start": "next start",
-        "prisma": "npx prisma migrate dev && npx prisma generate",
+        "test": "vitest",
+        "test:run": "vitest run",
         "lint": "eslint .",
         "lint:fix": "eslint . --fix",
         "format": "prettier --write .",
@@ -41,7 +42,9 @@
         "postcss": "8.5.26",
         "prettier": "^3.9.6",
         "prisma": "7.9.1",
-        "tailwindcss": "^4"
+        "tailwindcss": "^4",
+        "vite-tsconfig-paths": "^6.1.1",
+        "vitest": "^4.1.11"
     },
     "allowScripts": {
         "unrs-resolver@1.12.2": true,

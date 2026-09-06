@@ -8,7 +8,18 @@
 @import "./styles/pages/projects.css";
 @import "./styles/pages/main.css";
 
+@layer utilities {
+    .no-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+    .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+}
+
 body {
     background-color: var(--color-bg);
     color: var(--color-fg);
+    font-family: var(--font-dmsans); /* Need to remove so each style sheet can have their own font */
 }

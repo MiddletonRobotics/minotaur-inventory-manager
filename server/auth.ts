@@ -5,7 +5,7 @@ import { compare } from "bcryptjs";
 import { redirect } from "next/navigation";
 
 import prisma from "../prisma/prisma";
-import { createSession, deleteSession } from "../lib/session";
+import { createSession, deleteSession } from "./session";
 
 const LoginSchema = z.object({
     firstName: z.string().trim().min(1).max(50),
@@ -34,7 +34,7 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
         },
     });
 
-    if (!user) {
+    if (!user || !user.active) {
         return { error: "Invalid name or password." };
     }
 
@@ -44,12 +44,7 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
         return { error: "Invalid name or password." };
     }
 
-    await createSession({
-        id: String(user.id),
-        firstName: user.firstName,
-        lastName: user.lastName,
-        isAdmin: user.type === "ADMINISTRATOR",
-    });
+    await createSession(String(user.id));
 
     redirect("/");
 }
