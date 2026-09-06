@@ -47,6 +47,13 @@ export default async function InventoryCategoryPage({ params }: InventoryCategor
     const isSubcategory = category.parentId !== null;
     const canManageInventory = session?.user.role === "MANAGER" || session?.user.role === "ADMINISTRATOR";
 
+    const locations =
+        isSubcategory && canManageInventory
+            ? await prisma.storageLocation.findMany({
+                  orderBy: { name: "asc" },
+              })
+            : [];
+
     return (
         <>
             <Navbar />
@@ -87,7 +94,7 @@ export default async function InventoryCategoryPage({ params }: InventoryCategor
 
                     {isSubcategory && canManageInventory && (
                         <div className="mb-4">
-                            <AddItemButton categoryId={category.id} categoryName={category.name} />
+                            <AddItemButton categoryId={category.id} categoryName={category.name} locations={locations} />
                         </div>
                     )}
 

@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { CreateCategoryForm, DeleteCategoryButton, SubcategoryActionsMenu } from "@/components/category-management";
+import { StorageLocationManagement } from "@/components/location-management";
 import { authenticate } from "@/server/session";
 import prisma from "@/prisma/prisma";
 
@@ -14,29 +15,35 @@ export default async function InventorySettings() {
         redirect("/");
     }
 
-    const categories = await prisma.category.findMany({
-        where: { parentId: null },
-        orderBy: { name: "asc" },
-        include: {
-            _count: {
-                select: {
-                    children: true,
-                    items: true,
+    const [categories, locations] = await Promise.all([
+        prisma.category.findMany({
+            where: { parentId: null },
+            orderBy: { name: "asc" },
+            include: {
+                _count: {
+                    select: {
+                        children: true,
+                        items: true,
+                    },
                 },
-            },
-            children: {
-                orderBy: { name: "asc" },
-                include: {
-                    _count: {
-                        select: {
-                            children: true,
-                            items: true,
+                children: {
+                    orderBy: { name: "asc" },
+                    include: {
+                        _count: {
+                            select: {
+                                children: true,
+                                items: true,
+                            },
                         },
                     },
                 },
             },
-        },
-    });
+        }),
+
+        prisma.storageLocation.findMany({
+            orderBy: { name: "asc" },
+        }),
+    ]);
 
     const parentCategories = categories.map((category) => ({ id: category.id, name: category.name }));
     const subcategories = categories.flatMap((category) => category.children.map((subcategory) => ({ id: subcategory.id, name: subcategory.name, parentName: category.name })));
@@ -56,7 +63,12 @@ export default async function InventorySettings() {
                     <CreateCategoryForm parentCategories={parentCategories} />
                 </div>
             </section>
+            <section className="border-b border-border py-8">
+                <h3 className="text-lg font-semibold text-fg">Storage Locations</h3>
+                <p className="mt-1 text-sm text-fg-muted">Manage the locations available when adding inventory parts.</p>
 
+                <StorageLocationManagement locations={locations} />
+            </section>
             <section className="py-8">
                 <div>
                     <h3 className="text-lg font-semibold text-fg">Existing Categories</h3>

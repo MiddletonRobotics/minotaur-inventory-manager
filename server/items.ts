@@ -10,6 +10,7 @@ const CreateItemSchema = z.object({
     name: z.string().trim().min(1, "Part name is required.").max(100),
     partNumber: z.string().trim().min(1, "Part number is required.").max(100),
     quantity: z.coerce.number().int().min(0, "Quantity cannot be negative."),
+    location: z.string().trim().max(80).optional(),
     vendor: z.enum(["WCP", "VEX", "ANDYMARK", "THRIFTYBOT", "REV", "CTRE", "MCMASTER", "LIMELIGHT"]),
 });
 
@@ -51,6 +52,7 @@ export async function createItem(categoryId: number, _previousState: CreateItemS
         name: formData.get("name"),
         partNumber: formData.get("partNumber"),
         quantity: formData.get("quantity"),
+        location: formData.get("location") || undefined,
         vendor: formData.get("vendor"),
     });
 
@@ -58,7 +60,7 @@ export async function createItem(categoryId: number, _previousState: CreateItemS
         return { error: parsed.error.issues[0]?.message ?? "Invalid part information." };
     }
 
-    const { name, partNumber, quantity, vendor } = parsed.data;
+    const { name, partNumber, quantity, location, vendor } = parsed.data;
     const existingPart = await prisma.item.findUnique({
         where: { partNumber },
     });
@@ -67,15 +69,26 @@ export async function createItem(categoryId: number, _previousState: CreateItemS
         return { error: "A part with that part number already exists." };
     }
 
+    if (location) {
+        const locationExists = await prisma.storageLocation.findUnique({
+            where: { name: location },
+            select: { id: true },
+        });
+
+        if (!locationExists) {
+            return { error: "Select a valid storage location." };
+        }
+    }
+
     await prisma.item.create({
         data: {
             name,
             partNumber,
             quantity,
+            location: location ?? null,
             vendor,
             categoryId,
             description: "",
-            location: null,
             material: null,
         },
     });

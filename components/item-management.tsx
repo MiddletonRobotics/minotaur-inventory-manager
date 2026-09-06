@@ -6,9 +6,16 @@ import { useActionState, useTransition, useState } from "react";
 import Window from "@/components/window";
 import { createItem, deleteItem, type CreateItemState } from "@/server/items";
 
-type AddItemButtonProps = { categoryId: number; categoryName: string };
+type AddItemButtonProps = {
+    categoryId: number;
+    categoryName: string;
+    locations: {
+        id: number;
+        name: string;
+    }[];
+};
 
-export function AddItemButton({ categoryId, categoryName }: AddItemButtonProps) {
+export function AddItemButton({ categoryId, categoryName, locations }: AddItemButtonProps) {
     const [open, setOpen] = useState(false);
     const createItemAction = createItem.bind(null, categoryId);
     const [state, formAction, pending] = useActionState<CreateItemState, FormData>(createItemAction, undefined);
@@ -52,6 +59,20 @@ export function AddItemButton({ categoryId, categoryName }: AddItemButtonProps) 
                             />
                         </div>
 
+                        <div className="space-y-2">
+                            <label htmlFor="location" className="block text-sm font-medium text-fg">
+                                Location
+                            </label>
+                            <select id="location" name="location" defaultValue="" className="w-full rounded-md border bg-input px-3 py-2.5 text-sm text-fg outline-none focus:border-border-focus">
+                                <option value="">Not Set</option>
+
+                                {locations.map((location) => (
+                                    <option key={location.id} value={location.name}>
+                                        {location.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
                         <div className="space-y-2">
                             <label htmlFor="vendor" className="block text-sm font-medium text-fg">
                                 Vendor

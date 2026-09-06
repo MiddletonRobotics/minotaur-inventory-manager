@@ -76,6 +76,12 @@ model Item {
   @@index([partNumber])
 }
 
+model StorageLocation {
+  id        Int      @id @default(dbgenerated("floor(random() * 90000000 + 10000000)::int"))
+  name      String   @unique
+  createdAt DateTime @default(now())
+}
+
 model Project {
   id            Int               @id @default(dbgenerated("floor(random() * 90000000 + 10000000)::int"))
   name          String            @unique
