@@ -5,5 +5,5 @@ export default function Audit() {
         <>
             <Navbar />
         </>
-    )
+    );
 }

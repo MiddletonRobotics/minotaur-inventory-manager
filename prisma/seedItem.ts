@@ -93,7 +93,7 @@ async function main() {
     const locationInput = (await rl.question("Location number: ")).trim();
     const locationIndex = Number(locationInput);
 
-    let locationId: | number | null = null;
+    let locationId: number | null = null;
 
     if (!Number.isInteger(locationIndex) || locationIndex < 0 || locationIndex > locations.length) {
         console.error("Invalid location selection.");
@@ -146,10 +146,12 @@ async function main() {
     console.log(`Quantity: ${item.quantity}`);
 }
 
-main().catch((error) => {
-    console.error(error);
-    process.exit(1);
-}).finally(async () => {
-    rl.close();
-    await prisma.$disconnect();
-});
+main()
+    .catch((error) => {
+        console.error(error);
+        process.exit(1);
+    })
+    .finally(async () => {
+        rl.close();
+        await prisma.$disconnect();
+    });

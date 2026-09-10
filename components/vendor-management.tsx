@@ -3,8 +3,8 @@
 import { useActionState } from "react";
 import { createVendor, deactivateVendor, type VendorActionState } from "@/server/vendors";
 
-type Vendor = { id: number; name: string; active: boolean; };
-type Props = { vendors: Vendor[]; };
+type Vendor = { id: number; name: string; active: boolean };
+type Props = { vendors: Vendor[] };
 
 function RemoveVendorButton({ vendor }: { vendor: Vendor }) {
     const action = deactivateVendor.bind(null, vendor.id);
@@ -18,9 +18,7 @@ function RemoveVendorButton({ vendor }: { vendor: Vendor }) {
                 </button>
             </form>
 
-            {state?.error && (
-                <p className="mt-1 text-xs text-accent">{state.error}</p>
-            )}
+            {state?.error && <p className="mt-1 text-xs text-accent">{state.error}</p>}
         </div>
     );
 }
@@ -37,13 +35,9 @@ export function VendorManagement({ vendors }: Props) {
                 </button>
             </form>
 
-            {state?.error && (
-                <p className="mt-2 text-sm text-accent">{state.error}</p>
-            )}
+            {state?.error && <p className="mt-2 text-sm text-accent">{state.error}</p>}
 
-            {state?.success && (
-                <p className="mt-2 text-sm text-fg-muted">{state.success}</p>
-            )}
+            {state?.success && <p className="mt-2 text-sm text-fg-muted">{state.success}</p>}
 
             <div className="mt-5">
                 {vendors.map((vendor) => (

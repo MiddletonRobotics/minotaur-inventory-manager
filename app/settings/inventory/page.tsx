@@ -10,7 +10,7 @@ export default async function InventorySettings() {
 
     if (!session) redirect("/login");
     if (session.user.role !== "MANAGER" && session.user.role !== "ADMINISTRATOR") redirect("/");
-    
+
     const [categories, locations, vendors] = await Promise.all([
         prisma.category.findMany({
             where: { parentId: null },

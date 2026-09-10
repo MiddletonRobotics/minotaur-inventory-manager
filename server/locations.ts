@@ -12,14 +12,14 @@ const LocationSchema = z.object({
     parentId: z.string().trim().optional(),
 });
 
-export type LocationActionState = | { error?: string; success?: string; } | undefined;
+export type LocationActionState = { error?: string; success?: string } | undefined;
 
 async function requireInventoryManager() {
     const session = await authenticate();
 
-    if (!session) redirect("/login")
+    if (!session) redirect("/login");
     if (session.user.role !== "MANAGER" && session.user.role !== "ADMINISTRATOR") redirect("/");
-    
+
     return session;
 }
 
@@ -42,15 +42,14 @@ export async function createStorageLocation(_previousState: LocationActionState,
 
     const { name, parentId } = parsed.data;
 
-    const existing =
-        await prisma.storageLocation.findFirst({
-            where: {
-                name: {
-                    equals: name,
-                    mode: "insensitive",
-                },
+    const existing = await prisma.storageLocation.findFirst({
+        where: {
+            name: {
+                equals: name,
+                mode: "insensitive",
             },
-        });
+        },
+    });
 
     if (existing) {
         if (!existing.active) {
@@ -107,13 +106,13 @@ export async function deactivateStorageLocation(locationId: number, _previousSta
     await requireInventoryManager();
 
     const location = await prisma.storageLocation.findUnique({
-            where: { id: locationId },
-            include: {
-                children: {
-                    where: { active: true },
-                },
+        where: { id: locationId },
+        include: {
+            children: {
+                where: { active: true },
             },
-        });
+        },
+    });
 
     if (!location) {
         return { error: "Storage location does not exist." };
@@ -124,7 +123,7 @@ export async function deactivateStorageLocation(locationId: number, _previousSta
     });
 
     if (partsUsingLocation > 0) {
-        return {error: `${location.name} cannot be removed because ${partsUsingLocation} ${partsUsingLocation === 1 ? "part uses" : "parts use"} this location.` };
+        return { error: `${location.name} cannot be removed because ${partsUsingLocation} ${partsUsingLocation === 1 ? "part uses" : "parts use"} this location.` };
     }
 
     await prisma.storageLocation.update({

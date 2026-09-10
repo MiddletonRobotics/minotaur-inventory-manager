@@ -11,7 +11,7 @@ const VendorSchema = z.object({
     name: z.string().trim().min(1, "Vendor name is required.").max(80, "Vendor name is too long."),
 });
 
-export type VendorActionState = | { error?: string; success?: string; } | undefined;
+export type VendorActionState = { error?: string; success?: string } | undefined;
 
 async function requireInventoryManager() {
     const session = await authenticate();

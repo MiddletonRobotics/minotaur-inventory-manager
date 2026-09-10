@@ -37,7 +37,9 @@ export function StorageLocationManagement({ locations }: Props) {
                         <option value="">Top-level location</option>
 
                         {parentLocations.map((location) => (
-                            <option key={location.id} value={location.id}>{location.name}</option>
+                            <option key={location.id} value={location.id}>
+                                {location.name}
+                            </option>
                         ))}
                     </select>
 
@@ -47,13 +49,9 @@ export function StorageLocationManagement({ locations }: Props) {
                 </div>
             </form>
 
-            {state?.error && (
-                <p className="mt-2 text-sm text-accent">{state.error}</p>
-            )}
+            {state?.error && <p className="mt-2 text-sm text-accent">{state.error}</p>}
 
-            {state?.success && (
-                <p className="mt-2 text-sm text-fg-muted">{state.success}</p>
-            )}
+            {state?.success && <p className="mt-2 text-sm text-fg-muted">{state.success}</p>}
 
             <div className="mt-5 space-y-3">
                 {rootLocations.map((root) => {
