@@ -76,13 +76,13 @@ export default async function ProjectSettings() {
                 {activeProjects.length === 0 ? (
                     <p className="mt-6 text-sm text-fg-dim">There are currently no active projects.</p>
                 ) : (
-                    <div className="mt-6 divide-y divide-border border-y border-border">
+                    <div className="mt-6 border-border">
                         {activeProjects.map((project) => {
                             const checkedOutQuantity = project.checkouts.reduce((total, checkout) => total + checkout.quantityCheckedOut, 0);
                             const creator = `${project.createdByUser.firstName} ${project.createdByUser.lastName}`;
 
                             return (
-                                <div key={project.id} className="flex items-center justify-between gap-8 py-5">
+                                <div key={project.id} className="flex items-center justify-between gap-8 py-4">
                                     <div className="min-w-0">
                                         <div className="flex items-center gap-3">
                                             <p className="truncate font-medium text-fg">{project.name}</p>
@@ -107,7 +107,7 @@ export default async function ProjectSettings() {
                     </div>
                 )}
             </section>
-            <section className="py-8">
+            <section className="py-3">
                 <h3 className="text-lg font-semibold text-fg">Archived Projects</h3>
                 <p className="mt-1 text-sm text-fg-muted">
                     {archivedProjects.length} archived {archivedProjects.length === 1 ? "project" : "projects"}
