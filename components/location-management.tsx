@@ -60,17 +60,17 @@ export function StorageLocationManagement({ locations }: Props) {
                     const children = locations.filter((location) => location.parentId === root.id);
 
                     return (
-                        <div key={root.id} className="border-b border-border pb-3">
+                        <div key={root.id} className="pb-3">
                             <div className="flex items-center justify-between">
                                 <span className="text-sm font-medium text-fg">{root.name}</span>
                                 <RemoveLocationButton location={root} />
                             </div>
 
                             {children.length > 0 && (
-                                <div className="ml-5 mt-2 border-l border-border pl-4">
+                                <div className="ml-5 mt-2 pl-4">
                                     {children.map((child) => (
                                         <div key={child.id} className="flex items-center justify-between py-2">
-                                            <span className="text-sm text-fg-muted">{child.name}</span>
+                                            <span className="text-sm text-fg-muted">✱ {child.name}</span>
                                             <RemoveLocationButton location={child} />
                                         </div>
                                     ))}
