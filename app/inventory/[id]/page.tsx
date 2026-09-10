@@ -30,6 +30,10 @@ export default async function InventoryCategoryPage({ params }: InventoryCategor
             items: {
                 orderBy: { name: "asc" },
                 include: {
+                    vendor: true,
+                    location: {
+                        include: { parent: true },
+                    },
                     checkouts: {
                         where: {
                             project: { status: "ACTIVE" },
@@ -47,12 +51,20 @@ export default async function InventoryCategoryPage({ params }: InventoryCategor
     const isSubcategory = category.parentId !== null;
     const canManageInventory = session?.user.role === "MANAGER" || session?.user.role === "ADMINISTRATOR";
 
-    const locations =
+    const [locations, vendors] =
         isSubcategory && canManageInventory
-            ? await prisma.storageLocation.findMany({
-                  orderBy: { name: "asc" },
-              })
-            : [];
+            ? await Promise.all([
+                  prisma.storageLocation.findMany({
+                      where: { active: true },
+                      orderBy: { name: "asc" },
+                  }),
+
+                  prisma.vendor.findMany({
+                      where: { active: true },
+                      orderBy: { name: "asc" },
+                  }),
+              ])
+            : [[], []];
 
     return (
         <>
@@ -63,6 +75,7 @@ export default async function InventoryCategoryPage({ params }: InventoryCategor
                         <Link href="/inventory" className="transition-colors hover:text-fg">
                             Inventory
                         </Link>
+
                         {category.parent ? (
                             <>
                                 <span>/</span>
@@ -94,7 +107,7 @@ export default async function InventoryCategoryPage({ params }: InventoryCategor
 
                     {isSubcategory && canManageInventory && (
                         <div className="mb-4">
-                            <AddItemButton categoryId={category.id} categoryName={category.name} locations={locations} />
+                            <AddItemButton categoryId={category.id} categoryName={category.name} vendors={vendors} locations={locations} />
                         </div>
                     )}
 
@@ -127,14 +140,27 @@ export default async function InventoryCategoryPage({ params }: InventoryCategor
                                                 </td>
 
                                                 <td className="px-4 py-3 text-fg-muted">{item.partNumber}</td>
-                                                <td className="px-4 py-3 text-fg-muted">{item.vendor}</td>
-                                                <td className="px-4 py-3 text-fg-muted">{item.location ?? "Not set"}</td>
+                                                <td className="px-4 py-3 text-fg-muted">{item.vendor.name}</td>
+                                                <td className="px-4 py-3 text-fg-muted">{item.location ? (item.location.parent ? `${item.location.parent.name} / ${item.location.name}` : item.location.name) : "Not set"}</td>
                                                 <td className="px-4 py-3 text-fg-muted">{item.quantity}</td>
                                                 <td className="px-4 py-3 text-fg-muted">{checkedOut}</td>
                                                 <td className="px-4 py-3 font-semibold text-fg">{available}</td>
                                                 {canManageInventory && (
                                                     <td className="px-4 py-3 text-right">
-                                                        <ItemActionsMenu itemId={item.id} itemName={item.name} categoryId={category.id} />
+                                                        <ItemActionsMenu
+                                                            item={{
+                                                                id: item.id,
+                                                                name: item.name,
+                                                                partNumber: item.partNumber,
+                                                                description: item.description,
+                                                                quantity: item.quantity,
+                                                                vendorId: item.vendorId,
+                                                                locationId: item.locationId,
+                                                            }}
+                                                            categoryId={category.id}
+                                                            vendors={vendors}
+                                                            locations={locations}
+                                                        />
                                                     </td>
                                                 )}
                                             </tr>

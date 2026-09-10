@@ -9,6 +9,7 @@ const navItems = [
     { href: "/inventory", label: "Inventory" },
     { href: "/checkout", label: "Checkout" },
     { href: "/projects", label: "Projects" },
+    { href: "/audit", label: "Audit" },
 ];
 
 function displayName(firstName: string, lastName: string): string {
