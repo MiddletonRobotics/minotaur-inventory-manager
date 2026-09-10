@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { VendorManagement } from "@/components/vendor-management";
 import { CreateCategoryForm, DeleteCategoryButton, SubcategoryActionsMenu } from "@/components/category-management";
 import { StorageLocationManagement } from "@/components/location-management";
 import { authenticate } from "@/server/session";
@@ -7,15 +8,10 @@ import prisma from "@/prisma/prisma";
 export default async function InventorySettings() {
     const session = await authenticate();
 
-    if (!session) {
-        redirect("/login");
-    }
-
-    if (session.user.role !== "MANAGER" && session.user.role !== "ADMINISTRATOR") {
-        redirect("/");
-    }
-
-    const [categories, locations] = await Promise.all([
+    if (!session) redirect("/login");
+    if (session.user.role !== "MANAGER" && session.user.role !== "ADMINISTRATOR") redirect("/");
+    
+    const [categories, locations, vendors] = await Promise.all([
         prisma.category.findMany({
             where: { parentId: null },
             orderBy: { name: "asc" },
@@ -43,6 +39,11 @@ export default async function InventorySettings() {
         prisma.storageLocation.findMany({
             orderBy: { name: "asc" },
         }),
+
+        prisma.vendor.findMany({
+            where: { active: true },
+            orderBy: { name: "asc" },
+        }),
     ]);
 
     const parentCategories = categories.map((category) => ({ id: category.id, name: category.name }));
@@ -63,6 +64,14 @@ export default async function InventorySettings() {
                     <CreateCategoryForm parentCategories={parentCategories} />
                 </div>
             </section>
+
+            <section className="border-b border-border py-8">
+                <h3 className="text-lg font-semibold text-fg">Vendors</h3>
+                <p className="mt-1 text-sm text-fg-muted">Manage the vendors available when adding or editing inventory parts.</p>
+
+                <VendorManagement vendors={vendors} />
+            </section>
+
             <section className="border-b border-border py-8">
                 <h3 className="text-lg font-semibold text-fg">Storage Locations</h3>
                 <p className="mt-1 text-sm text-fg-muted">Manage the locations available when adding inventory parts.</p>
