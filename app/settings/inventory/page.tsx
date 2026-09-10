@@ -37,6 +37,7 @@ export default async function InventorySettings() {
         }),
 
         prisma.storageLocation.findMany({
+            where: { active: true },
             orderBy: { name: "asc" },
         }),
 
