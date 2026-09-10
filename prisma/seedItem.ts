@@ -2,76 +2,114 @@ import "dotenv/config";
 import { createInterface } from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 import prisma from "./prisma";
-import { Vendor } from "./generated/enums";
 
 const rl = createInterface({ input, output });
-const vendors = Object.values(Vendor);
 
 async function main() {
     console.log("=== Create new item ===");
 
     const categories = await prisma.category.findMany({
-        orderBy: { id: "asc" },
-        include: { parent: { include: { parent: true } } },
+        where: {
+            parentId: { not: null },
+        },
+        orderBy: { name: "asc" },
+        include: { parent: true },
     });
 
     if (categories.length === 0) {
-        console.log("No categories found. Run seedCategory.ts to create a category first.");
+        console.log("No subcategories found. Create a subcategory first.");
         process.exit(1);
     }
 
-    console.log("\n Avaliable Categories");
-    for (const c of categories) {
-        const grandparent = c.parent?.parent ? `${c.parent.parent.name} > ` : "";
-        const parent = c.parent ? `${c.parent.name} > ` : "";
-        console.log(`  [${c.id}] ${grandparent}${parent}${c.name}`);
+    console.log("\nAvailable Subcategories:");
+
+    for (const category of categories) {
+        console.log(`  [${category.id}] ${category.parent?.name} > ${category.name}`);
     }
 
-    const categoryInput = (await rl.question("\n Category ID: ")).trim();
-    const categoryId = parseInt(categoryInput, 10);
+    const categoryInput = (await rl.question("\nCategory ID: ")).trim();
+    const categoryId = Number(categoryInput);
 
-    if (isNaN(categoryId)) {
+    if (!Number.isInteger(categoryId)) {
         console.error("Invalid category ID.");
         process.exit(1);
     }
 
-    const category = categories.find((c) => c.id === categoryId);
+    const category = categories.find((category) => category.id === categoryId);
+
     if (!category) {
-        console.error(`No category found with ID: ${categoryId}`);
+        console.error(`No subcategory found with ID: ${categoryId}`);
         process.exit(1);
     }
-
-    console.log(`Category selected: ${category.name}`);
 
     const name = (await rl.question("Part name: ")).trim();
-    const partNumber = (await rl.question("Part number (unique, given from vendor): ")).trim();
+    const partNumber = (await rl.question("Part number: ")).trim();
     const description = (await rl.question("Description: ")).trim();
 
-    if (!name || !partNumber || !description) {
-        console.error("Name, part number, and description are required");
+    if (!name || !partNumber) {
+        console.error("Part name and part number are required.");
         process.exit(1);
     }
 
-    console.log("\n Vendors:");
-    vendors.forEach((v, i) => console.log(`  [${i + 1}] ${v}`));
+    const vendors = await prisma.vendor.findMany({
+        where: { active: true },
+        orderBy: { name: "asc" },
+    });
+
+    if (vendors.length === 0) {
+        console.error("No active vendors exist. Add a vendor first.");
+        process.exit(1);
+    }
+
+    console.log("\nVendors:");
+
+    vendors.forEach((vendor, index) => {
+        console.log(`  [${index + 1}] ${vendor.name}`);
+    });
 
     const vendorInput = (await rl.question("Vendor number: ")).trim();
-    const vendorIndex = parseInt(vendorInput, 10) - 1;
+    const vendorIndex = Number(vendorInput) - 1;
 
-    if (isNaN(vendorIndex) || vendorIndex < 0 || vendorIndex >= vendors.length) {
-        console.error("Invalid vendor selection");
+    if (!Number.isInteger(vendorIndex) || vendorIndex < 0 || vendorIndex >= vendors.length) {
+        console.error("Invalid vendor selection.");
         process.exit(1);
     }
 
     const vendor = vendors[vendorIndex];
+    const locations = await prisma.storageLocation.findMany({
+        where: { active: true },
+        orderBy: { name: "asc" },
+        include: { parent: true },
+    });
+
+    console.log("\nStorage Locations:");
+    console.log("  [0] Not set");
+
+    locations.forEach((location, index) => {
+        const label = location.parent ? `${location.parent.name} > ${location.name}` : location.name;
+        console.log(`  [${index + 1}] ${label}`);
+    });
+
+    const locationInput = (await rl.question("Location number: ")).trim();
+    const locationIndex = Number(locationInput);
+
+    let locationId: | number | null = null;
+
+    if (!Number.isInteger(locationIndex) || locationIndex < 0 || locationIndex > locations.length) {
+        console.error("Invalid location selection.");
+        process.exit(1);
+    }
+
+    if (locationIndex > 0) {
+        locationId = locations[locationIndex - 1].id;
+    }
 
     const material = (await rl.question("Material (optional): ")).trim();
-    const location = (await rl.question('Storage location (e.g. "Cabinet A-B2"): ')).trim();
-    const quantityStr = (await rl.question("Initial quantity on hand (default 0): ")).trim();
-    const quantity = quantityStr === "" ? 0 : parseInt(quantityStr, 10);
+    const quantityInput = (await rl.question("Initial quantity (default 0): ")).trim();
+    const quantity = quantityInput === "" ? 0 : Number(quantityInput);
 
-    if (isNaN(quantity) || quantity < 0) {
-        console.error("Quantity must be a non-negative integer");
+    if (!Number.isInteger(quantity) || quantity < 0) {
+        console.error("Quantity must be a non-negative integer.");
         process.exit(1);
     }
 
@@ -79,26 +117,39 @@ async function main() {
         data: {
             name,
             partNumber,
-            description,
+            description: description || "",
             categoryId,
-            vendor,
+            vendorId: vendor.id,
+            locationId,
             material: material || null,
-            location: location || null,
             quantity,
+        },
+        include: {
+            vendor: true,
+            location: {
+                include: { parent: true },
+            },
         },
     });
 
     console.log(`\nItem created: [${item.id}] ${item.name} (${item.partNumber})`);
-    console.log(`Category: ${category.name}`);
-    console.log(`Vendor: ${item.vendor}`);
-    console.log(`Location: ${item.location ?? "not set"}`);
-    console.log(`Quantity: ${item.quantity}`);
+    console.log(`Category: ${category.parent?.name} > ${category.name}`);
+    console.log(`Vendor: ${item.vendor.name}`);
 
-    rl.close();
-    await prisma.$disconnect();
+    if (item.location) {
+        const locationName = item.location.parent ? `${item.location.parent.name} > ${item.location.name}` : item.location.name;
+        console.log(`Location: ${locationName}`);
+    } else {
+        console.log("Location: not set");
+    }
+
+    console.log(`Quantity: ${item.quantity}`);
 }
 
 main().catch((error) => {
     console.error(error);
     process.exit(1);
+}).finally(async () => {
+    rl.close();
+    await prisma.$disconnect();
 });

@@ -13,17 +13,6 @@ enum Role {
   ADMINISTRATOR
 }
 
-enum Vendor {
-  WCP
-  VEX
-  ANDYMARK
-  THRIFTYBOT
-  REV
-  CTRE
-  MCMASTER
-  LIMELIGHT
-}
-
 enum ProjectStatus {
   ACTIVE
   ARCHIVED
@@ -38,9 +27,10 @@ model User {
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
 
-  projectsCreated   Project[]         @relation("ProjectCreatedBy")
-  checkoutsCreated  ProjectCheckout[] @relation("CheckoutCheckedOutBy")
-  checkoutsModified ProjectCheckout[] @relation("CheckoutModifiedBy")
+  projectsCreated      Project[]             @relation("ProjectCreatedBy")
+  checkoutsCreated     ProjectCheckout[]     @relation("CheckoutCheckedOutBy")
+  checkoutsModified    ProjectCheckout[]     @relation("CheckoutModifiedBy")
+  inventoryAdjustments InventoryAdjustment[] @relation("InventoryAdjustmentUser")
 
   @@unique([firstName, lastName])
 }
@@ -58,28 +48,62 @@ model Category {
 }
 
 model Item {
-  id          Int               @id @default(dbgenerated("floor(random() * 90000000 + 10000000)::int"))
+  id          Int                   @id @default(dbgenerated("floor(random() * 90000000 + 10000000)::int"))
   name        String
-  partNumber  String            @unique
+  partNumber  String                @unique
   description String
   categoryId  Int
-  category    Category          @relation(fields: [categoryId], references: [id])
-  vendor      Vendor
+  category    Category              @relation(fields: [categoryId], references: [id])
+  vendorId    Int
+  vendor      Vendor                @relation(fields: [vendorId], references: [id], onDelete: Restrict)
+  locationId  Int?
+  location    StorageLocation?      @relation(fields: [locationId], references: [id], onDelete: SetNull)
   material    String?
-  location    String?
-  quantity    Int               @default(0)
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  quantity    Int                   @default(0)
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
   checkouts   ProjectCheckout[]
+  adjustments InventoryAdjustment[]
 
   @@index([categoryId])
   @@index([partNumber])
+  @@index([vendorId])
+  @@index([locationId])
+}
+
+model Vendor {
+  id        Int      @id @default(dbgenerated("floor(random() * 90000000 + 10000000)::int"))
+  name      String   @unique
+  active    Boolean  @default(true)
+  items     Item[]
+  createdAt DateTime @default(now())
 }
 
 model StorageLocation {
-  id        Int      @id @default(dbgenerated("floor(random() * 90000000 + 10000000)::int"))
-  name      String   @unique
-  createdAt DateTime @default(now())
+  id        Int               @id @default(dbgenerated("floor(random() * 90000000 + 10000000)::int"))
+  name      String            @unique
+  active    Boolean           @default(true)
+  parentId  Int?
+  parent    StorageLocation?  @relation("StorageLocationTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children  StorageLocation[] @relation("StorageLocationTree")
+  items     Item[]
+  createdAt DateTime          @default(now())
+}
+
+model InventoryAdjustment {
+  id               Int      @id @default(dbgenerated("floor(random() * 90000000 + 10000000)::int"))
+  itemId           Int
+  item             Item     @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  quantityDelta    Int
+  previousQuantity Int
+  newQuantity      Int
+  reason           String?
+  adjustedById     Int
+  adjustedBy       User     @relation("InventoryAdjustmentUser", fields: [adjustedById], references: [id])
+  createdAt        DateTime @default(now())
+
+  @@index([itemId])
+  @@index([adjustedById])
 }
 
 model Project {
