@@ -11,7 +11,7 @@ const LocationSchema = z.object({
     name: z.string().trim().min(1, "Location name is required.").max(80, "Location name is too long."),
 });
 
-export type LocationActionState = | { error?: string; success?: string; } | undefined;
+export type LocationActionState = { error?: string; success?: string } | undefined;
 
 async function requireInventoryManager() {
     const session = await authenticate();
@@ -51,8 +51,7 @@ export async function createStorageLocation(_previousState: LocationActionState,
             where: { id: parentId },
             include: {
                 _count: {
-                    select: { items: true,
-                    },
+                    select: { items: true },
                 },
             },
         });
@@ -107,6 +106,7 @@ export async function createStorageLocation(_previousState: LocationActionState,
     return { success: `${name} was added.` };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function deactivateStorageLocation(locationId: number, _previousState: LocationActionState, _formData: FormData): Promise<LocationActionState> {
     await requireInventoryManager();
 
@@ -134,7 +134,7 @@ export async function deactivateStorageLocation(locationId: number, _previousSta
     }
 
     if (!location.active) {
-        return {  success: "Storage location is already inactive." };
+        return { success: "Storage location is already inactive." };
     }
 
     if (location._count.items > 0) {
@@ -147,8 +147,7 @@ export async function deactivateStorageLocation(locationId: number, _previousSta
         return { error: "This location cannot be removed because it still has active child locations." };
     }
 
-    const childWithParts =
-        location.children.find((child) => child._count.items > 0);
+    const childWithParts = location.children.find((child) => child._count.items > 0);
 
     if (childWithParts) {
         return { error: `${childWithParts.name} still contains parts. Move those parts before removing ${location.name}.` };
