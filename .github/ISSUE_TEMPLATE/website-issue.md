@@ -1,10 +1,10 @@
 ---
-name: Feature Request
-about: Request new features / enchancements for the website
-title: "[FEATURE]"
-labels: bug, enhancement
+name: Website Issue
+about: Any bug or issue related to the website portion of the project
+title: "[ISSUE]"
+labels: bug, website
 assignees: ultimatehecker
-type: Feature
+type: Bug
 
 ---
 
@@ -16,11 +16,12 @@ type: Feature
 
 
 
-* **What is the requested behavior?**
+* **If the current behavior is a bug, please provide the steps to reproduce and if possible a minimal demo of the problem** via
+https://plnkr.co or similar (you can use this template as a starting point: http://plnkr.co/edit/tpl:AvJOMERrnz94ekVua0u5).
 
 
 
-* **What is the motivation / use case for changing the behavior?**
+* **What is the expected behavior?**
 
 
 
