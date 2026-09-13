@@ -18,6 +18,17 @@ enum ProjectStatus {
   ARCHIVED
 }
 
+enum AuditAction {
+  PART_CREATED
+  PART_DELETED
+  PROJECT_CREATED
+  PROJECT_ARCHIVED
+  CATEGORY_CREATED
+  CATEGORY_DELETED
+  SUBCATEGORY_CREATED
+  SUBCATEGORY_DELETED
+}
+
 model User {
   id        Int      @id @default(dbgenerated("floor(random() * 90000000 + 10000000)::int"))
   type      Role     @default(STANDARD)
@@ -31,6 +42,7 @@ model User {
   checkoutsCreated     ProjectCheckout[]     @relation("CheckoutCheckedOutBy")
   checkoutsModified    ProjectCheckout[]     @relation("CheckoutModifiedBy")
   inventoryAdjustments InventoryAdjustment[] @relation("InventoryAdjustmentUser")
+  auditLogs            AuditLog[]            @relation("AuditLogPerformedBy")
 
   @@unique([firstName, lastName])
 }
@@ -117,6 +129,26 @@ model Project {
   archivedAt    DateTime?
   createdById   Int
   createdByUser User              @relation("ProjectCreatedBy", fields: [createdById], references: [id])
+}
+
+model AuditLog {
+  id     Int         @id @default(dbgenerated("floor(random() * 90000000 + 10000000)::int"))
+  action AuditAction
+
+  entityId   Int?
+  entityName String
+  summary    String
+  details    Json?
+
+  performedById Int
+  performedBy   User @relation("AuditLogPerformedBy", fields: [performedById], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+
+  @@index([action])
+  @@index([entityId])
+  @@index([performedById])
+  @@index([createdAt])
 }
 
 model ProjectCheckout {
