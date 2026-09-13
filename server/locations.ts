@@ -3,9 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-
+import { writeAuditLog } from "./audit";
 import prisma from "@/prisma/prisma";
-import { authenticate } from "@/server/session";
+import { authenticate, Session } from "@/server/session";
 
 const LocationSchema = z.object({
     name: z.string().trim().min(1, "Location name is required.").max(80, "Location name is too long."),
@@ -18,15 +18,19 @@ async function requireInventoryManager() {
 
     if (!session) redirect("/login");
     if (session.user.role !== "MANAGER" && session.user.role !== "ADMINISTRATOR") redirect("/");
+
+    return session;
 }
 
 function revalidateLocations() {
     revalidatePath("/settings/inventory");
     revalidatePath("/inventory/[id]", "page");
+    revalidatePath("/audit");
 }
 
 export async function createStorageLocation(_previousState: LocationActionState, formData: FormData): Promise<LocationActionState> {
-    await requireInventoryManager();
+    const session: Session = await requireInventoryManager();
+    const performedById = Number(session.user.id);
 
     const parsed = LocationSchema.safeParse({
         name: formData.get("name"),
@@ -38,7 +42,9 @@ export async function createStorageLocation(_previousState: LocationActionState,
 
     const name = parsed.data.name;
     const parentValue = formData.get("parentId")?.toString().trim() ?? "";
+
     let parentId: number | null = null;
+    let parentName: | string | null = null;
 
     if (parentValue !== "") {
         parentId = Number(parentValue);
@@ -67,6 +73,8 @@ export async function createStorageLocation(_previousState: LocationActionState,
         if (parent._count.items > 0) {
             return { error: "Parts are stored directly in this location. Move them before adding a child location." };
         }
+
+        parentName = parent.name;
     }
 
     const existing = await prisma.storageLocation.findFirst({
@@ -87,18 +95,43 @@ export async function createStorageLocation(_previousState: LocationActionState,
             return { error: "An inactive location with that name already exists under a different parent." };
         }
 
-        await prisma.storageLocation.update({
+        await prisma.$transaction(async (tx) => {
+        await tx.storageLocation.update({
             where: { id: existing.id },
             data: { active: true },
         });
+
+        await writeAuditLog(tx, {
+            action: "LOCATION_REACTIVATED",
+            entityId: existing.id,
+            entityName: existing.name,
+            summary: existing.parentId ? `Reactivated storage location "${existing.name}" under "${parentName}".` : `Reactivated storage location "${existing.name}".`,
+            performedById,
+            details: {
+                parentId: existing.parentId,
+                parentName,
+            },
+        });
+    });
 
         revalidateLocations();
 
         return { success: `${existing.name} was restored.` };
     }
 
-    await prisma.storageLocation.create({
-        data: { name, parentId },
+    await prisma.$transaction(async (tx) => {
+        const location = await tx.storageLocation.create({
+            data: { name, parentId },
+        });
+
+        await writeAuditLog(tx, {
+            action: "LOCATION_CREATED",
+            entityId: location.id,
+            entityName: location.name,
+            summary: parentName ? `Created storage location "${location.name}" under "${parentName}".` : `Created storage location "${location.name}".`,
+            performedById,
+            details: { parentId, parentName },
+        });
     });
 
     revalidateLocations();
@@ -108,11 +141,18 @@ export async function createStorageLocation(_previousState: LocationActionState,
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function deactivateStorageLocation(locationId: number, _previousState: LocationActionState, _formData: FormData): Promise<LocationActionState> {
-    await requireInventoryManager();
+    const session: Session = await requireInventoryManager();
+    const performedById = Number(session.user.id);
 
     const location = await prisma.storageLocation.findUnique({
         where: { id: locationId },
         include: {
+            parent: {
+                select: {
+                    id: true,
+                    name: true,
+                }
+            },
             children: {
                 select: {
                     id: true,
@@ -153,9 +193,23 @@ export async function deactivateStorageLocation(locationId: number, _previousSta
         return { error: `${childWithParts.name} still contains parts. Move those parts before removing ${location.name}.` };
     }
 
-    await prisma.storageLocation.update({
-        where: { id: location.id },
-        data: { active: false },
+    await prisma.$transaction(async (tx) => {
+        await tx.storageLocation.update({
+            where: { id: location.id },
+            data: { active: false },
+        });
+
+        await writeAuditLog(tx, {
+            action: "LOCATION_DEACTIVATED",
+            entityId: location.id,
+            entityName: location.name,
+            summary: location.parent ? `Deactivated storage location "${location.parent.name} / ${location.name}".` : `Deactivated storage location "${location.name}".`,
+            performedById,
+            details: {
+                parentId: location.parentId,
+                parentName: location.parent ?.name ?? null,
+            },
+        });
     });
 
     revalidateLocations();
