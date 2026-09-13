@@ -3,8 +3,8 @@
 import { useActionState, useTransition, useState } from "react";
 import { createUser, deactivateUser, reactivateUser, promoteUser, demoteUser, type CreateUserState, type ReactivateUserState, type PromoteUserState } from "@/server/users";
 
-import ActionMenu, { actionMenuItemCSS, dangerousActionMenuItemCSS } from "@/components/action-menu";
-import Window from "@/components/window";
+import ActionMenu, { actionMenuItemCSS, dangerousActionMenuItemCSS } from "@/components/ui/action-menu";
+import Window from "@/components/ui/window";
 
 type DeleteUserButtonProps = { userId: number; userName: string };
 type ReactivateUserControlProps = { userId: number; userName: string; userRole: "STANDARD" | "MANAGER" | "ADMINISTRATOR" };
