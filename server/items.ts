@@ -2,10 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { z } from "zod";
-
 import prisma from "@/prisma/prisma";
-import { authenticate } from "@/server/session";
+import { authenticate, Session } from "@/server/session";
+import { writeAuditLog } from "./audit";
+import { z } from "zod";
 
 const ItemSchema = z.object({
     name: z.string().trim().min(1, "Part name is required.").max(100),
@@ -43,6 +43,7 @@ function revalidateItemPaths(categoryId: number) {
     revalidatePath(`/inventory/${categoryId}`);
     revalidatePath("/inventory");
     revalidatePath("/settings/inventory");
+    revalidatePath("/audit");
 }
 
 async function validateVendorAndLocation(vendorId: number, locationId?: string) {
@@ -76,15 +77,19 @@ async function validateVendorAndLocation(vendorId: number, locationId?: string) 
 }
 
 export async function createItem(categoryId: number, _previousState: CreateItemState, formData: FormData): Promise<CreateItemState> {
-    await requireInventoryManager();
+    const session: Session = await requireInventoryManager();
 
     const category = await prisma.category.findUnique({
         where: { id: categoryId },
         select: {
+            name: true,
             parentId: true,
+            parent: {
+                select: { name: true },
+            },
             _count: {
                 select: { children: true },
-            },
+            }
         },
     });
 
@@ -120,17 +125,36 @@ export async function createItem(categoryId: number, _previousState: CreateItemS
         return { error: relations.error };
     }
 
-    await prisma.item.create({
-        data: {
-            name,
-            partNumber,
-            quantity,
-            vendorId: relations.vendorId,
-            locationId: relations.locationId,
-            categoryId,
-            description: description ?? "",
-            material: null,
-        },
+    await prisma.$transaction(async (tx) => {
+        const item =  await tx.item.create({
+            data: {
+                name,
+                partNumber,
+                quantity,
+                vendorId: relations.vendorId,
+                locationId: relations.locationId,
+                categoryId,
+                description: description ?? "",
+                material: null,
+            },
+        });
+
+        const categoryName = category.parent ? `${category.parent.name} / ${category.name}` : category.name;
+
+        await writeAuditLog(tx, {
+                action: "PART_CREATED",
+                entityId: item.id,
+                entityName: item.name,
+                summary: `Created part "${item.name}" (${item.partNumber}) with quantity ${item.quantity} in ${categoryName}.`,
+                performedById: Number(session.user.id,),
+                details: {
+                    partNumber: item.partNumber,
+                    quantity: item.quantity,
+                    categoryId,
+                    category: categoryName,
+                },
+            },
+        );
     });
 
     revalidateItemPaths(categoryId);
@@ -265,13 +289,15 @@ export async function adjustItemQuantity(itemId: number, categoryId: number, _pr
 }
 
 export async function deleteItem(itemId: number, categoryId: number, _previousState: ItemActionState, _formData: FormData): Promise<ItemActionState> {
-    await requireInventoryManager();
+    const session: Session = await requireInventoryManager();
 
     const item = await prisma.item.findUnique({
         where: { id: itemId },
         select: {
             id: true,
             name: true,
+            partNumber: true,
+            quantity: true,
             categoryId: true,
             _count: {
                 select: {
@@ -290,9 +316,26 @@ export async function deleteItem(itemId: number, categoryId: number, _previousSt
         return { error: "This part cannot be deleted because it has inventory history." };
     }
 
-    await prisma.item.delete({
-        where: { id: item.id },
-    });
+    await prisma.$transaction(async (tx) => {
+        await writeAuditLog(tx, {
+                action: "PART_DELETED",
+                entityId: item.id,
+                entityName: item.name,
+                summary: `Deleted part "${item.name}" (${item.partNumber}), which had a quantity of ${item.quantity}.`,
+                performedById: Number(session.user.id),
+                details: {
+                    partNumber: item.partNumber,
+                    quantity: item.quantity,
+                    categoryId: item.categoryId,
+                },
+            },
+        );
+
+        await tx.item.delete({
+            where: { id: item.id },
+        });
+    },
+);
 
     revalidateItemPaths(categoryId);
 
