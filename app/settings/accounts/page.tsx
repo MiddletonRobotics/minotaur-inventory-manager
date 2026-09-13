@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { CreateUserForm, DeactivateUserButton, ReactivateUserControl, UserActionsMenu } from "@/components/user-management";
+import { CreateUserForm, ReactivateUserControl, UserActionsMenu } from "@/components/user-management";
 import { authenticate } from "@/server/session";
 import prisma from "@/prisma/prisma";
 

@@ -288,6 +288,7 @@ export async function adjustItemQuantity(itemId: number, categoryId: number, _pr
     return result;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function deleteItem(itemId: number, categoryId: number, _previousState: ItemActionState, _formData: FormData): Promise<ItemActionState> {
     const session: Session = await requireInventoryManager();
 
