@@ -2,8 +2,8 @@
 
 import { useActionState, useTransition, useState } from "react";
 import { createCategory, deleteAllItems, deleteCategory, moveAllItems, relocateSubcategory, type CategoryActionState } from "@/server/categories";
-import ActionMenu, { actionMenuItemCSS, dangerousActionMenuItemCSS } from "@/components/action-menu";
-import Window from "@/components/window";
+import ActionMenu, { actionMenuItemCSS, dangerousActionMenuItemCSS } from "@/components/ui/action-menu";
+import Window from "@/components/ui/window";
 
 type ParentCategory = { id: number; name: string };
 type CreateCategoryFormProps = { parentCategories: ParentCategory[] };

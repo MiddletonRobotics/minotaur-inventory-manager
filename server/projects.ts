@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { authenticate } from "@/server/session";
+import { authenticate, Session } from "@/server/session";
+import { writeAuditLog } from "./audit";
 import prisma from "@/prisma/prisma";
 
 const CreateProjectSchema = z.object({
@@ -48,27 +49,45 @@ export async function createProject(_previousState: ProjectActionState, formData
         return { error: "A project with that name already exists." };
     }
 
-    await prisma.project.create({
-        data: {
-            name,
-            description: description && description.length > 0 ? description : null,
-            status: "ACTIVE",
-            createdById: Number(session.user.id),
-        },
+    await prisma.$transaction(async (tx) => {
+        const project = await tx.project.create({
+            data: {
+                name,
+                description: description && description.length > 0 ? description : null,
+                status: "ACTIVE",
+                createdById: Number(session.user.id),
+            },
+        });
+
+        await writeAuditLog(tx, {
+            action: "PROJECT_CREATED",
+            entityId: project.id,
+            entityName: project.name,
+            summary: `Created project "${project.name}".`,
+            performedById: Number(session.user.id),
+            details: {
+                description: project.description ?? "",
+            },
+        });
     });
 
     revalidatePath("/settings/projects");
     revalidatePath("/projects");
+    revalidatePath("/audit");
 
     return { success: `${name} was created successfully.` };
 }
 
 export async function archiveProject(projectId: number): Promise<void> {
-    await requireProjectManager();
+    const session: Session = await requireProjectManager();
 
     const project = await prisma.project.findUnique({
         where: { id: projectId },
-        select: { id: true, status: true },
+        select: {
+            id: true,
+            name: true,
+            status: true,
+        },
     });
 
     if (!project) {
@@ -79,16 +98,27 @@ export async function archiveProject(projectId: number): Promise<void> {
         return;
     }
 
-    await prisma.project.update({
-        where: { id: project.id },
-        data: {
-            status: "ARCHIVED",
-            archivedAt: new Date(),
-        },
+    await prisma.$transaction(async (tx) => {
+        await tx.project.update({
+            where: { id: project.id },
+            data: {
+                status: "ARCHIVED",
+                archivedAt: new Date(),
+            },
+        });
+
+        await writeAuditLog(tx, {
+            action: "PROJECT_ARCHIVED",
+            entityId: project.id,
+            entityName: project.name,
+            summary: `Archived project "${project.name}".`,
+            performedById: Number(session.user.id),
+        });
     });
 
     revalidatePath("/settings/projects");
     revalidatePath("/projects");
     revalidatePath("/inventory");
     revalidatePath("/inventory/[id]", "page");
+    revalidatePath("/audit");
 }

@@ -3,9 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-
+import { writeAuditLog } from "./audit";
 import prisma from "@/prisma/prisma";
-import { authenticate } from "@/server/session";
+import { authenticate, Session } from "@/server/session";
 
 const VendorSchema = z.object({
     name: z.string().trim().min(1, "Vendor name is required.").max(80, "Vendor name is too long."),
@@ -25,10 +25,12 @@ async function requireInventoryManager() {
 function revalidateVendors() {
     revalidatePath("/settings/inventory");
     revalidatePath("/inventory/[id]", "page");
+    revalidatePath("/audit");
 }
 
 export async function createVendor(_previousState: VendorActionState, formData: FormData): Promise<VendorActionState> {
-    await requireInventoryManager();
+    const session: Session = await requireInventoryManager();
+    const performedById = Number(session.user.id);
 
     const parsed = VendorSchema.safeParse({
         name: formData.get("name"),
@@ -50,9 +52,20 @@ export async function createVendor(_previousState: VendorActionState, formData: 
 
     if (existing) {
         if (!existing.active) {
-            await prisma.vendor.update({
-                where: { id: existing.id },
-                data: { active: true },
+            await prisma.$transaction(async (tx) => {
+                await tx.vendor.update({
+                    where: { id: existing.id },
+                    data: { active: true },
+                });
+
+                await writeAuditLog(tx, {
+                    action: "VENDOR_REACTIVATED",
+                    entityId: existing.id,
+                    entityName: existing.name,
+                    summary: `Reactivated vendor "${existing.name}".`,
+                    performedById,
+                    details: { active: true },
+                });
             });
 
             revalidateVendors();
@@ -63,8 +76,18 @@ export async function createVendor(_previousState: VendorActionState, formData: 
         return { error: "That vendor already exists." };
     }
 
-    await prisma.vendor.create({
-        data: { name },
+    await prisma.$transaction(async (tx) => {
+        const vendor = await tx.vendor.create({
+            data: { name },
+        });
+
+        await writeAuditLog(tx, {
+            action: "VENDOR_CREATED",
+            entityId: vendor.id,
+            entityName: vendor.name,
+            summary: `Created vendor "${vendor.name}".`,
+            performedById,
+        });
     });
 
     revalidateVendors();
@@ -72,8 +95,10 @@ export async function createVendor(_previousState: VendorActionState, formData: 
     return { success: `${name} was added.` };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function deactivateVendor(vendorId: number, _previousState: VendorActionState, _formData: FormData): Promise<VendorActionState> {
-    await requireInventoryManager();
+    const session: Session = await requireInventoryManager();
+    const performedById = Number(session.user.id);
 
     const vendor = await prisma.vendor.findUnique({
         where: { id: vendorId },
@@ -83,9 +108,24 @@ export async function deactivateVendor(vendorId: number, _previousState: VendorA
         return { error: "Vendor does not exist." };
     }
 
-    await prisma.vendor.update({
-        where: { id: vendor.id },
-        data: { active: false },
+    if (!vendor.active) {
+        return { success: "Vendor is already inactive." };
+    }
+
+    await prisma.$transaction(async (tx) => {
+        await tx.vendor.update({
+            where: { id: vendor.id },
+            data: { active: false },
+        });
+
+        await writeAuditLog(tx, {
+            action: "VENDOR_DEACTIVATED",
+            entityId: vendor.id,
+            entityName: vendor.name,
+            summary: `Deactivated vendor "${vendor.name}".`,
+            performedById,
+            details: { active: false },
+        });
     });
 
     revalidateVendors();

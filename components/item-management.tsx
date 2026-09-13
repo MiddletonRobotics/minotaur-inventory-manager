@@ -1,9 +1,9 @@
 "use client";
 
 import { Plus } from "lucide-react";
-import ActionMenu, { actionMenuItemCSS, dangerousActionMenuItemCSS } from "@/components/action-menu";
+import ActionMenu, { actionMenuItemCSS, dangerousActionMenuItemCSS } from "@/components/ui/action-menu";
 import { useActionState, useTransition, useState } from "react";
-import Window from "@/components/window";
+import Window from "@/components/ui/window";
 import { createItem, deleteItem, editItem, adjustItemQuantity, type CreateItemState } from "@/server/items";
 
 type VendorOption = { id: number; name: string };

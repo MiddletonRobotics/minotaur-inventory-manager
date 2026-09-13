@@ -27,7 +27,7 @@ vi.mock("next/navigation", () => ({
     redirect: mocks.redirect,
 }));
 
-import { login, logout } from "@/server/auth";
+import { login } from "@/server/auth";
 
 function dummyFormData(firstName: string, lastName: string, password: string): FormData {
     const formData = new FormData();

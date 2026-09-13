@@ -3,8 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-
-import { authenticate } from "@/server/session";
+import { writeAuditLog } from "./audit";
+import { authenticate, Session } from "@/server/session";
 import prisma from "@/prisma/prisma";
 
 const CreateCategorySchema = z
@@ -44,10 +44,11 @@ function revalidateInventoryPaths() {
     revalidatePath("/settings/inventory");
     revalidatePath("/inventory");
     revalidatePath("/inventory/[id]", "page");
+    revalidatePath("/audit");
 }
 
 export async function createCategory(_previousState: CategoryActionState, formData: FormData): Promise<CategoryActionState> {
-    await requireInventoryManager();
+    const session: Session = await requireInventoryManager();
 
     const parsed = CreateCategorySchema.safeParse({
         name: formData.get("name"),
@@ -68,6 +69,7 @@ export async function createCategory(_previousState: CategoryActionState, formDa
         return { error: "A category with that name already exists." };
     }
 
+    let parentName: string | null = null;
     let resolvedParentId: number | null = null;
 
     if (level === "SUBCATEGORY") {
@@ -83,6 +85,7 @@ export async function createCategory(_previousState: CategoryActionState, formDa
             where: { id: parsedParentId },
             select: {
                 id: true,
+                name: true,
                 parentId: true,
             },
         });
@@ -96,10 +99,34 @@ export async function createCategory(_previousState: CategoryActionState, formDa
         }
 
         resolvedParentId = parent.id;
+        parentName = parent.name;
     }
 
-    await prisma.category.create({
-        data: { name, parentId: resolvedParentId },
+    await prisma.$transaction(async (tx) => {
+        const category = await tx.category.create({
+            data: {
+                name,
+                parentId: resolvedParentId,
+            },
+        });
+
+        const isSubcategory = level === "SUBCATEGORY";
+
+        await writeAuditLog(tx, {
+            action: isSubcategory ? "SUBCATEGORY_CREATED" : "CATEGORY_CREATED",
+            entityId: category.id,
+            entityName: category.name,
+            summary: isSubcategory ? `Created subcategory "${category.name}" under "${parentName}".` : `Created category "${category.name}".`,
+            performedById: Number(session.user.id),
+            details: isSubcategory
+                ? {
+                      parentId: resolvedParentId!,
+                      parentName: parentName!,
+                  }
+                : {
+                      level: "CATEGORY",
+                  },
+        });
     });
 
     revalidateInventoryPaths();
@@ -108,11 +135,16 @@ export async function createCategory(_previousState: CategoryActionState, formDa
 }
 
 export async function deleteCategory(categoryId: number): Promise<void> {
-    await requireInventoryManager();
+    const session: Session = await requireInventoryManager();
 
     const category = await prisma.category.findUnique({
         where: { id: categoryId },
         include: {
+            parent: {
+                select: {
+                    name: true,
+                },
+            },
             _count: {
                 select: {
                     children: true,
@@ -134,8 +166,27 @@ export async function deleteCategory(categoryId: number): Promise<void> {
         throw new Error("A subcategory containing inventory items cannot be deleted.");
     }
 
-    await prisma.category.delete({
-        where: { id: categoryId },
+    await prisma.$transaction(async (tx) => {
+        const isSubcategory = category.parentId !== null;
+
+        await writeAuditLog(tx, {
+            action: isSubcategory ? "SUBCATEGORY_DELETED" : "CATEGORY_DELETED",
+            entityId: category.id,
+            entityName: category.name,
+            summary: isSubcategory ? `Deleted subcategory "${category.name}" from "${category.parent?.name}".` : `Deleted category "${category.name}".`,
+            performedById: Number(session.user.id),
+            details: isSubcategory
+                ? {
+                      parentName: category.parent?.name ?? "",
+                  }
+                : {
+                      level: "CATEGORY",
+                  },
+        });
+
+        await tx.category.delete({
+            where: { id: category.id },
+        });
     });
 
     revalidateInventoryPaths();
@@ -245,7 +296,7 @@ export async function moveAllItems(sourceSubcategoryId: number, _previousState: 
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function deleteAllItems(sourceSubcategoryId: number, _previousState: CategoryBulkActionState, _formData: FormData): Promise<CategoryBulkActionState> {
-    await requireInventoryManager();
+    const session: Session = await requireInventoryManager();
 
     const source = await prisma.category.findUnique({
         where: { id: sourceSubcategoryId },
@@ -267,20 +318,57 @@ export async function deleteAllItems(sourceSubcategoryId: number, _previousState
         return { success: `${source.name} does not contain any parts` };
     }
 
-    const itemWithProjectHistory = await prisma.item.findFirst({
+    const itemWithHistory = await prisma.item.findFirst({
         where: {
             categoryId: source.id,
-            checkouts: { some: {} },
+            OR: [
+                {
+                    checkouts: { some: {} },
+                },
+                {
+                    adjustments: { some: {} },
+                },
+            ],
         },
         select: { id: true },
     });
 
-    if (itemWithProjectHistory) {
-        return { error: "These parts cannot be deleted because one or more have project checkout history. Move the parts to another subcategory instead so project history is preserved." };
+    if (itemWithHistory) {
+        return { error: "These parts cannot be deleted because one or more have inventory or project history." };
     }
 
-    const result = await prisma.item.deleteMany({
+    const items = await prisma.item.findMany({
         where: { categoryId: source.id },
+        select: {
+            id: true,
+            name: true,
+            partNumber: true,
+            quantity: true,
+        },
+    });
+
+    const result = await prisma.$transaction(async (tx) => {
+        for (const item of items) {
+            await writeAuditLog(tx, {
+                action: "PART_DELETED",
+                entityId: item.id,
+                entityName: item.name,
+                summary: `Deleted part "${item.name}" (${item.partNumber}) from ${source.name}.`,
+                performedById: Number(session.user.id),
+                details: {
+                    partNumber: item.partNumber,
+                    quantity: item.quantity,
+                    categoryId: source.id,
+                    category: source.name,
+                },
+            });
+        }
+
+        return tx.item.deleteMany({
+            where: {
+                categoryId: source.id,
+            },
+        });
     });
 
     revalidateInventoryPaths();

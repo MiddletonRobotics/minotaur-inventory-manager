@@ -5,8 +5,8 @@ import { compare, hash } from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-
-import { authenticate } from "@/server/session";
+import { writeAuditLog } from "./audit";
+import { authenticate, Session } from "@/server/session";
 import prisma from "@/prisma/prisma";
 
 /**
@@ -66,8 +66,14 @@ async function requireAdministrator() {
     return session;
 }
 
+function revalidateAccounts() {
+    revalidatePath("/settings/accounts");
+    revalidatePath("/audit");
+}
+
 export async function createUser(_previousState: CreateUserState, formData: FormData): Promise<CreateUserState> {
-    await requireAdministrator();
+    const session: Session = await requireAdministrator();
+    const performedById = Number(session.user.id);
 
     const parsed = CreateUserSchema.safeParse({
         firstName: formData.get("firstName"),
@@ -118,26 +124,43 @@ export async function createUser(_previousState: CreateUserState, formData: Form
         return { error: existingUser.active ? "A user with that name already exists." : "A deactivated user with that name already exists. Reactivate that account instead." };
     }
 
-    await prisma.user.create({
-        data: {
-            firstName,
-            lastName,
-            type: role,
-            pwdHash,
-        },
+    await prisma.$transaction(async (tx) => {
+        const user = await tx.user.create({
+            data: {
+                firstName,
+                lastName,
+                type: role,
+                pwdHash,
+            },
+        });
+
+        const roleName = role === "MANAGER" ? "Manager" : "Standard";
+
+        await writeAuditLog(tx, {
+            action: "USER_CREATED",
+            entityId: user.id,
+            entityName: `${user.firstName} ${user.lastName}`,
+            summary: `Created ${roleName} account "${user.firstName} ${user.lastName}".`,
+            performedById,
+            details: { role },
+        });
     });
 
-    revalidatePath("/settings/accounts");
+    revalidateAccounts();
 
     return { success: `${firstName} ${lastName} was created successfully.` };
 }
 
 export async function deactivateUser(userId: number): Promise<void> {
-    await requireAdministrator();
+    const session: Session = await requireAdministrator();
+    const performedById = Number(session.user.id);
 
     const user = await prisma.user.findUnique({
         where: { id: userId },
         select: {
+            id: true,
+            firstName: true,
+            lastName: true,
             type: true,
             active: true,
         },
@@ -151,16 +174,28 @@ export async function deactivateUser(userId: number): Promise<void> {
         return;
     }
 
-    await prisma.user.update({
-        where: { id: userId },
-        data: { active: false },
+    await prisma.$transaction(async (tx) => {
+        await tx.user.update({
+            where: { id: user.id },
+            data: { active: false },
+        });
+
+        await writeAuditLog(tx, {
+            action: "USER_DEACTIVATED",
+            entityId: user.id,
+            entityName: `${user.firstName} ${user.lastName}`,
+            summary: `Deactivated ${user.type === "MANAGER" ? "Manager" : "Standard"} account "${user.firstName} ${user.lastName}".`,
+            performedById,
+            details: { role: user.type },
+        });
     });
 
-    revalidatePath("/settings/accounts");
+    revalidateAccounts();
 }
 
 export async function reactivateUser(userId: number, _previousState: ReactivateUserState, formData: FormData): Promise<ReactivateUserState> {
-    await requireAdministrator();
+    const session: Session = await requireAdministrator();
+    const performedById = Number(session.user.id);
 
     const user = await prisma.user.findUnique({
         where: { id: userId },
@@ -221,18 +256,33 @@ export async function reactivateUser(userId: number, _previousState: ReactivateU
 
     const pwdHash = await hash(passwordToHash, 12);
 
-    await prisma.user.update({
-        where: { id: user.id },
-        data: { active: true, pwdHash },
+    await prisma.$transaction(async (tx) => {
+        await tx.user.update({
+            where: { id: user.id },
+            data: {
+                active: true,
+                pwdHash,
+            },
+        });
+
+        await writeAuditLog(tx, {
+            action: "USER_REACTIVATED",
+            entityId: user.id,
+            entityName: `${user.firstName} ${user.lastName}`,
+            summary: `Reactivated ${user.type === "MANAGER" ? "Manager" : "Standard"} account "${user.firstName} ${user.lastName}".`,
+            performedById,
+            details: { role: user.type },
+        });
     });
 
-    revalidatePath("/settings/accounts");
+    revalidateAccounts();
 
     return { success: `${user.firstName} ${user.lastName} was reactivated.` };
 }
 
 export async function promoteUser(userId: number, _previousState: PromoteUserState, formData: FormData): Promise<PromoteUserState> {
-    await requireAdministrator();
+    const session: Session = await requireAdministrator();
+    const performedById = Number(session.user.id);
 
     const user = await prisma.user.findUnique({
         where: { id: userId },
@@ -273,26 +323,43 @@ export async function promoteUser(userId: number, _previousState: PromoteUserSta
 
     const pwdHash = await hash(password, 12);
 
-    await prisma.user.update({
-        where: { id: user.id },
-        data: {
-            type: "MANAGER",
-            pwdHash,
-        },
+    await prisma.$transaction(async (tx) => {
+        await tx.user.update({
+            where: { id: user.id },
+            data: {
+                type: "MANAGER",
+                pwdHash,
+            },
+        });
+
+        await writeAuditLog(tx, {
+            action: "USER_PROMOTED",
+            entityId: user.id,
+            entityName: `${user.firstName} ${user.lastName}`,
+            summary: `Promoted "${user.firstName} ${user.lastName}" from Standard to Manager.`,
+            performedById,
+            details: {
+                previousRole: "STANDARD",
+                newRole: "MANAGER",
+            },
+        });
     });
 
-    revalidatePath("/settings/accounts");
+    revalidateAccounts();
 
     return { success: `${user.firstName} ${user.lastName} was promoted to Manager.` };
 }
 
 export async function demoteUser(userId: number): Promise<void> {
-    await requireAdministrator();
+    const session: Session = await requireAdministrator();
+    const performedById = Number(session.user.id);
 
     const user = await prisma.user.findUnique({
         where: { id: userId },
         select: {
             id: true,
+            firstName: true,
+            lastName: true,
             type: true,
             active: true,
         },
@@ -304,15 +371,29 @@ export async function demoteUser(userId: number): Promise<void> {
 
     const pwdHash = await hash(standardUserPassword, 12);
 
-    await prisma.user.update({
-        where: { id: user.id },
-        data: {
-            type: "STANDARD",
-            pwdHash,
-        },
+    await prisma.$transaction(async (tx) => {
+        await tx.user.update({
+            where: { id: user.id },
+            data: {
+                type: "STANDARD",
+                pwdHash,
+            },
+        });
+
+        await writeAuditLog(tx, {
+            action: "USER_DEMOTED",
+            entityId: user.id,
+            entityName: `${user.firstName} ${user.lastName}`,
+            summary: `Demoted "${user.firstName} ${user.lastName}" from Manager to Standard.`,
+            performedById,
+            details: {
+                previousRole: "MANAGER",
+                newRole: "STANDARD",
+            },
+        });
     });
 
-    revalidatePath("/settings/accounts");
+    revalidateAccounts();
 }
 
 async function isPrivilegedPasswordInUse(password: string, excludedUserId?: number): Promise<boolean> {
