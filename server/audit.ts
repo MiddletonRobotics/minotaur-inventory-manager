@@ -1,4 +1,4 @@
-import type { Prisma }from "@/prisma/generated/client";
+import type { Prisma } from "@/prisma/generated/client";
 import type { AuditAction } from "@/prisma/generated/client";
 
 type AuditTransaction = Pick<Prisma.TransactionClient, "auditLog">;
@@ -9,7 +9,7 @@ type AuditLogInput = {
     summary: string;
     performedById: number;
     details?: Prisma.InputJsonValue;
-}
+};
 
 export async function writeAuditLog(tx: AuditTransaction, input: AuditLogInput) {
     await tx.auditLog.create({
@@ -19,7 +19,7 @@ export async function writeAuditLog(tx: AuditTransaction, input: AuditLogInput) 
             entityName: input.entityName,
             summary: input.summary,
             performedById: input.performedById,
-            ...(input.details !== undefined ? {details: input.details} : {}),
+            ...(input.details !== undefined ? { details: input.details } : {}),
         },
     });
 }

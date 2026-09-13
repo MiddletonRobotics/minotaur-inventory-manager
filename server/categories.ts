@@ -69,7 +69,7 @@ export async function createCategory(_previousState: CategoryActionState, formDa
         return { error: "A category with that name already exists." };
     }
 
-    let parentName: | string  | null = null;
+    let parentName: string | null = null;
     let resolvedParentId: number | null = null;
 
     if (level === "SUBCATEGORY") {
@@ -118,12 +118,14 @@ export async function createCategory(_previousState: CategoryActionState, formDa
             entityName: category.name,
             summary: isSubcategory ? `Created subcategory "${category.name}" under "${parentName}".` : `Created category "${category.name}".`,
             performedById: Number(session.user.id),
-            details: isSubcategory ? {
-                parentId: resolvedParentId!,
-                parentName: parentName!,
-            } : {
-                level: "CATEGORY",
-            },
+            details: isSubcategory
+                ? {
+                      parentId: resolvedParentId!,
+                      parentName: parentName!,
+                  }
+                : {
+                      level: "CATEGORY",
+                  },
         });
     });
 
@@ -146,9 +148,9 @@ export async function deleteCategory(categoryId: number): Promise<void> {
             _count: {
                 select: {
                     children: true,
-                    items: true
-                }
-            }
+                    items: true,
+                },
+            },
         },
     });
 
@@ -168,18 +170,19 @@ export async function deleteCategory(categoryId: number): Promise<void> {
         const isSubcategory = category.parentId !== null;
 
         await writeAuditLog(tx, {
-                action: isSubcategory ? "SUBCATEGORY_DELETED" : "CATEGORY_DELETED",
-                entityId: category.id,
-                entityName: category.name,
-                summary: isSubcategory ? `Deleted subcategory "${category.name}" from "${category.parent?.name}".` : `Deleted category "${category.name}".`,
-                performedById: Number(session.user.id),
-                details: isSubcategory ? {
-                    parentName: category.parent?.name ?? "",
-                } : {
-                    level: "CATEGORY",
-                },
-            },
-        );
+            action: isSubcategory ? "SUBCATEGORY_DELETED" : "CATEGORY_DELETED",
+            entityId: category.id,
+            entityName: category.name,
+            summary: isSubcategory ? `Deleted subcategory "${category.name}" from "${category.parent?.name}".` : `Deleted category "${category.name}".`,
+            performedById: Number(session.user.id),
+            details: isSubcategory
+                ? {
+                      parentName: category.parent?.name ?? "",
+                  }
+                : {
+                      level: "CATEGORY",
+                  },
+        });
 
         await tx.category.delete({
             where: { id: category.id },
@@ -318,12 +321,14 @@ export async function deleteAllItems(sourceSubcategoryId: number, _previousState
     const itemWithHistory = await prisma.item.findFirst({
         where: {
             categoryId: source.id,
-            OR: [{
-                checkouts: { some: {} },
-            },
-            {
-                adjustments: { some: {} },
-            }],
+            OR: [
+                {
+                    checkouts: { some: {} },
+                },
+                {
+                    adjustments: { some: {} },
+                },
+            ],
         },
         select: { id: true },
     });
@@ -355,14 +360,13 @@ export async function deleteAllItems(sourceSubcategoryId: number, _previousState
                     quantity: item.quantity,
                     categoryId: source.id,
                     category: source.name,
-                }},
-            );
+                },
+            });
         }
 
         return tx.item.deleteMany({
             where: {
-                categoryId:
-                    source.id,
+                categoryId: source.id,
             },
         });
     });

@@ -44,7 +44,7 @@ export async function createStorageLocation(_previousState: LocationActionState,
     const parentValue = formData.get("parentId")?.toString().trim() ?? "";
 
     let parentId: number | null = null;
-    let parentName: | string | null = null;
+    let parentName: string | null = null;
 
     if (parentValue !== "") {
         parentId = Number(parentValue);
@@ -96,23 +96,23 @@ export async function createStorageLocation(_previousState: LocationActionState,
         }
 
         await prisma.$transaction(async (tx) => {
-        await tx.storageLocation.update({
-            where: { id: existing.id },
-            data: { active: true },
-        });
+            await tx.storageLocation.update({
+                where: { id: existing.id },
+                data: { active: true },
+            });
 
-        await writeAuditLog(tx, {
-            action: "LOCATION_REACTIVATED",
-            entityId: existing.id,
-            entityName: existing.name,
-            summary: existing.parentId ? `Reactivated storage location "${existing.name}" under "${parentName}".` : `Reactivated storage location "${existing.name}".`,
-            performedById,
-            details: {
-                parentId: existing.parentId,
-                parentName,
-            },
+            await writeAuditLog(tx, {
+                action: "LOCATION_REACTIVATED",
+                entityId: existing.id,
+                entityName: existing.name,
+                summary: existing.parentId ? `Reactivated storage location "${existing.name}" under "${parentName}".` : `Reactivated storage location "${existing.name}".`,
+                performedById,
+                details: {
+                    parentId: existing.parentId,
+                    parentName,
+                },
+            });
         });
-    });
 
         revalidateLocations();
 
@@ -151,7 +151,7 @@ export async function deactivateStorageLocation(locationId: number, _previousSta
                 select: {
                     id: true,
                     name: true,
-                }
+                },
             },
             children: {
                 select: {
@@ -207,7 +207,7 @@ export async function deactivateStorageLocation(locationId: number, _previousSta
             performedById,
             details: {
                 parentId: location.parentId,
-                parentName: location.parent ?.name ?? null,
+                parentName: location.parent?.name ?? null,
             },
         });
     });

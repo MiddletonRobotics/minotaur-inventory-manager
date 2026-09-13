@@ -6,15 +6,15 @@ import FilterBar from "./ui/filter-bar";
 import SearchInput from "./ui/search-input";
 import SelectDropdown, { type SelectDropdownOption } from "./ui/select-dropdown";
 
-export type AuditAction = 
-    | "INVENTORY_ADJUSTED" 
-    | "PART_CREATED" 
-    | "PART_DELETED" 
-    | "PROJECT_CREATED" 
-    | "PROJECT_ARCHIVED" 
-    | "CATEGORY_CREATED" 
-    | "CATEGORY_DELETED" 
-    | "SUBCATEGORY_CREATED" 
+export type AuditAction =
+    | "INVENTORY_ADJUSTED"
+    | "PART_CREATED"
+    | "PART_DELETED"
+    | "PROJECT_CREATED"
+    | "PROJECT_ARCHIVED"
+    | "CATEGORY_CREATED"
+    | "CATEGORY_DELETED"
+    | "SUBCATEGORY_CREATED"
     | "SUBCATEGORY_DELETED"
     | "VENDOR_CREATED"
     | "VENDOR_DEACTIVATED"
@@ -31,7 +31,7 @@ export type AuditAction =
 type AuditUser = {
     firstName: string;
     lastName: string;
-    role: | "STANDARD" | "MANAGER" | "ADMINISTRATOR";
+    role: "STANDARD" | "MANAGER" | "ADMINISTRATOR";
 };
 
 type QuantityAdjustmentEntry = {
@@ -44,7 +44,7 @@ type QuantityAdjustmentEntry = {
         category: {
             id: number;
             name: string;
-            parent: { name: string; } | null;
+            parent: { name: string } | null;
         };
     };
     quantityDelta: number;
@@ -64,9 +64,9 @@ type GeneralAuditEntry = {
     createdAt: string;
 };
 
-export type AuditHistoryEntry = | QuantityAdjustmentEntry | GeneralAuditEntry;
+export type AuditHistoryEntry = QuantityAdjustmentEntry | GeneralAuditEntry;
 
-type AuditGroup = | "ALL" | "INVENTORY" | "PROJECTS" | "CATEGORIES" | "VENDORS" | "LOCATIONS" | "ACCOUNTS";
+type AuditGroup = "ALL" | "INVENTORY" | "PROJECTS" | "CATEGORIES" | "VENDORS" | "LOCATIONS" | "ACCOUNTS";
 type AuditHistoryProps = {
     entries: AuditHistoryEntry[];
 };
@@ -91,7 +91,7 @@ const actionLabels: Record<AuditAction, string> = {
     USER_DEACTIVATED: "User Deactivated",
     USER_REACTIVATED: "User Reactivated",
     USER_PROMOTED: "User Promoted",
-    USER_DEMOTED: "User Demoted"
+    USER_DEMOTED: "User Demoted",
 };
 
 const actionGroups: Record<AuditAction, Exclude<AuditGroup, "ALL">> = {
@@ -129,9 +129,12 @@ const groupOptions: readonly SelectDropdownOption<AuditGroup>[] = [
 
 function formatRole(role: AuditUser["role"]) {
     switch (role) {
-        case "ADMINISTRATOR": return "Administrator";
-        case "MANAGER": return "Manager";
-        default: return "Standard";
+        case "ADMINISTRATOR":
+            return "Administrator";
+        case "MANAGER":
+            return "Manager";
+        default:
+            return "Standard";
     }
 }
 
@@ -159,12 +162,12 @@ export default function AuditHistory({ entries }: AuditHistoryProps) {
     const [action, setAction] = useState<AuditAction | "ALL">("ALL");
     const actionOptions: SelectDropdownOption<AuditAction | "ALL">[] = [
         { value: "ALL", label: "All Activity" },
-        ...Object.entries(actionLabels).filter(
-            ([value]) => group === "ALL" || actionGroups[value as AuditAction] === group,
-        ).map(([value, label]) => ({
-            value: value as AuditAction,
-            label,
-        }))
+        ...Object.entries(actionLabels)
+            .filter(([value]) => group === "ALL" || actionGroups[value as AuditAction] === group)
+            .map(([value, label]) => ({
+                value: value as AuditAction,
+                label,
+            })),
     ];
 
     const filteredEntries = useMemo(() => {
@@ -175,7 +178,7 @@ export default function AuditHistory({ entries }: AuditHistoryProps) {
             if (action !== "ALL" && entry.action !== action) return false;
             if (!query) return true;
 
-            return getSearchableText(entry,).some((value) => value.toLowerCase().includes(query));
+            return getSearchableText(entry).some((value) => value.toLowerCase().includes(query));
         });
     }, [entries, search, group, action]);
 
@@ -200,7 +203,9 @@ export default function AuditHistory({ entries }: AuditHistoryProps) {
                 <SelectDropdown value={action} options={actionOptions} onChange={setAction} ariaLabel="Filter audit activity" className="sm:w-48" />
             </FilterBar>
 
-            <p className="mb-3 text-xs text-fg-dim">Showing{" "}{filteredEntries.length}{" "}of {entries.length}{" "}audit entries</p>
+            <p className="mb-3 text-xs text-fg-dim">
+                Showing {filteredEntries.length} of {entries.length} audit entries
+            </p>
 
             {filteredEntries.length === 0 ? (
                 <div className="rounded-xl border border-border bg-card px-6 py-12 text-center">
@@ -235,24 +240,16 @@ function AuditRow({ entry }: { entry: AuditHistoryEntry }) {
         <tr className="border-b border-border">
             <td className="whitespace-nowrap px-4 py-4 text-fg-muted">{formatDate(entry.createdAt)}</td>
             <td className="px-4 py-4">
-                <span className="whitespace-nowrap rounded-full border border-border px-2.5 py-1 text-xs text-fg-muted">
-                    {actionLabels[entry.action]}
-                </span>
+                <span className="whitespace-nowrap rounded-full border border-border px-2.5 py-1 text-xs text-fg-muted">{actionLabels[entry.action]}</span>
             </td>
 
-            <td className="px-4 py-4">
-                {entry.action === "INVENTORY_ADJUSTED" ? (
-                    <QuantityDetails entry={entry} />
-                ) : (
-                    <GeneralDetails entry={entry} />
-                )}
-            </td>
+            <td className="px-4 py-4">{entry.action === "INVENTORY_ADJUSTED" ? <QuantityDetails entry={entry} /> : <GeneralDetails entry={entry} />}</td>
 
             <td className="whitespace-nowrap px-4 py-4">
-                <p className="text-fg">{entry.user.firstName}{" "}{entry.user.lastName}</p>
-                <p className="mt-1 text-xs text-fg-dim">
-                    {formatRole(entry.user.role)}
+                <p className="text-fg">
+                    {entry.user.firstName} {entry.user.lastName}
                 </p>
+                <p className="mt-1 text-xs text-fg-dim">{formatRole(entry.user.role)}</p>
             </td>
         </tr>
     );
@@ -264,8 +261,13 @@ function QuantityDetails({ entry }: { entry: QuantityAdjustmentEntry }) {
     return (
         <div>
             <div className="flex flex-wrap items-center gap-3">
-                <Link href={`/inventory/${entry.item.category.id}`} className="font-medium text-fg transition-colors hover:text-fg-muted">{entry.item.name}</Link>
-                <span className={entry.quantityDelta > 0 ? "font-semibold text-green-500" : "font-semibold text-accent"}>{entry.quantityDelta > 0 ? "+" : ""}{entry.quantityDelta}</span>
+                <Link href={`/inventory/${entry.item.category.id}`} className="font-medium text-fg transition-colors hover:text-fg-muted">
+                    {entry.item.name}
+                </Link>
+                <span className={entry.quantityDelta > 0 ? "font-semibold text-green-500" : "font-semibold text-accent"}>
+                    {entry.quantityDelta > 0 ? "+" : ""}
+                    {entry.quantityDelta}
+                </span>
                 <span className="text-fg-muted">
                     {entry.previousQuantity}
                     <span className="mx-2 text-fg-dim">→</span>
@@ -273,7 +275,11 @@ function QuantityDetails({ entry }: { entry: QuantityAdjustmentEntry }) {
                 </span>
             </div>
 
-            <p className="mt-1 text-xs text-fg-dim">{entry.item.partNumber}{" · "}{category}</p>
+            <p className="mt-1 text-xs text-fg-dim">
+                {entry.item.partNumber}
+                {" · "}
+                {category}
+            </p>
             <p className="mt-2 text-sm text-fg-muted">{entry.reason ?? "No reason provided"}</p>
         </div>
     );

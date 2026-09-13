@@ -11,7 +11,8 @@ type SearchInputProps = {
 export default function SearchInput({ value, onChange, placeholder = "Search...", ariaLabel = "Search", className = "" }: SearchInputProps) {
     return (
         <input
-            type="search" value={value}
+            type="search"
+            value={value}
             onChange={(event) => onChange(event.target.value)}
             placeholder={placeholder}
             aria-label={ariaLabel}

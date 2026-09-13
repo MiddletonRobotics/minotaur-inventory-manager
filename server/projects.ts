@@ -60,16 +60,15 @@ export async function createProject(_previousState: ProjectActionState, formData
         });
 
         await writeAuditLog(tx, {
-                action: "PROJECT_CREATED",
-                entityId: project.id,
-                entityName: project.name,
-                summary: `Created project "${project.name}".`,
-                performedById: Number(session.user.id),
-                details: {
-                    description: project.description ?? "",
-                },
+            action: "PROJECT_CREATED",
+            entityId: project.id,
+            entityName: project.name,
+            summary: `Created project "${project.name}".`,
+            performedById: Number(session.user.id),
+            details: {
+                description: project.description ?? "",
             },
-        );
+        });
     });
 
     revalidatePath("/settings/projects");
@@ -84,10 +83,10 @@ export async function archiveProject(projectId: number): Promise<void> {
 
     const project = await prisma.project.findUnique({
         where: { id: projectId },
-        select: { 
-            id: true, 
+        select: {
+            id: true,
             name: true,
-            status: true 
+            status: true,
         },
     });
 
@@ -109,13 +108,12 @@ export async function archiveProject(projectId: number): Promise<void> {
         });
 
         await writeAuditLog(tx, {
-                action: "PROJECT_ARCHIVED",
-                entityId: project.id,
-                entityName: project.name,
-                summary: `Archived project "${project.name}".`,
-                performedById: Number(session.user.id),
-            },
-        );
+            action: "PROJECT_ARCHIVED",
+            entityId: project.id,
+            entityName: project.name,
+            summary: `Archived project "${project.name}".`,
+            performedById: Number(session.user.id),
+        });
     });
 
     revalidatePath("/settings/projects");

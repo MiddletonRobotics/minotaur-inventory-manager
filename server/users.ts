@@ -195,7 +195,7 @@ export async function deactivateUser(userId: number): Promise<void> {
 
 export async function reactivateUser(userId: number, _previousState: ReactivateUserState, formData: FormData): Promise<ReactivateUserState> {
     const session: Session = await requireAdministrator();
-    const performedById = Number(session.user.id)
+    const performedById = Number(session.user.id);
 
     const user = await prisma.user.findUnique({
         where: { id: userId },
@@ -271,7 +271,7 @@ export async function reactivateUser(userId: number, _previousState: ReactivateU
             entityName: `${user.firstName} ${user.lastName}`,
             summary: `Reactivated ${user.type === "MANAGER" ? "Manager" : "Standard"} account "${user.firstName} ${user.lastName}".`,
             performedById,
-            details: { role: user.type},
+            details: { role: user.type },
         });
     });
 
@@ -282,7 +282,7 @@ export async function reactivateUser(userId: number, _previousState: ReactivateU
 
 export async function promoteUser(userId: number, _previousState: PromoteUserState, formData: FormData): Promise<PromoteUserState> {
     const session: Session = await requireAdministrator();
-    const performedById = Number (session.user.id);
+    const performedById = Number(session.user.id);
 
     const user = await prisma.user.findUnique({
         where: { id: userId },

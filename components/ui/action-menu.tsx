@@ -2,7 +2,7 @@
 
 import { EllipsisVertical } from "lucide-react";
 import type { ReactNode } from "react";
-import Dropdown, { dangerousDropdownItemCSS, dropdownItemCSS,} from "@/components/ui/dropdown";
+import Dropdown, { dangerousDropdownItemCSS, dropdownItemCSS } from "@/components/ui/dropdown";
 
 type ActionMenuProps = { children: ReactNode };
 

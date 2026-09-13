@@ -6,7 +6,5 @@ type FilterBarProps = {
 };
 
 export default function FilterBar({ children, className = "" }: FilterBarProps) {
-    return (
-        <div className={`mb-5 flex flex-col gap-3 sm:flex-row ${className}`}>{children}</div>
-    );
+    return <div className={`mb-5 flex flex-col gap-3 sm:flex-row ${className}`}>{children}</div>;
 }

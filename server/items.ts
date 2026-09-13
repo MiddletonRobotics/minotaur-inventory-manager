@@ -89,7 +89,7 @@ export async function createItem(categoryId: number, _previousState: CreateItemS
             },
             _count: {
                 select: { children: true },
-            }
+            },
         },
     });
 
@@ -126,7 +126,7 @@ export async function createItem(categoryId: number, _previousState: CreateItemS
     }
 
     await prisma.$transaction(async (tx) => {
-        const item =  await tx.item.create({
+        const item = await tx.item.create({
             data: {
                 name,
                 partNumber,
@@ -142,19 +142,18 @@ export async function createItem(categoryId: number, _previousState: CreateItemS
         const categoryName = category.parent ? `${category.parent.name} / ${category.name}` : category.name;
 
         await writeAuditLog(tx, {
-                action: "PART_CREATED",
-                entityId: item.id,
-                entityName: item.name,
-                summary: `Created part "${item.name}" (${item.partNumber}) with quantity ${item.quantity} in ${categoryName}.`,
-                performedById: Number(session.user.id,),
-                details: {
-                    partNumber: item.partNumber,
-                    quantity: item.quantity,
-                    categoryId,
-                    category: categoryName,
-                },
+            action: "PART_CREATED",
+            entityId: item.id,
+            entityName: item.name,
+            summary: `Created part "${item.name}" (${item.partNumber}) with quantity ${item.quantity} in ${categoryName}.`,
+            performedById: Number(session.user.id),
+            details: {
+                partNumber: item.partNumber,
+                quantity: item.quantity,
+                categoryId,
+                category: categoryName,
             },
-        );
+        });
     });
 
     revalidateItemPaths(categoryId);
@@ -319,24 +318,22 @@ export async function deleteItem(itemId: number, categoryId: number, _previousSt
 
     await prisma.$transaction(async (tx) => {
         await writeAuditLog(tx, {
-                action: "PART_DELETED",
-                entityId: item.id,
-                entityName: item.name,
-                summary: `Deleted part "${item.name}" (${item.partNumber}), which had a quantity of ${item.quantity}.`,
-                performedById: Number(session.user.id),
-                details: {
-                    partNumber: item.partNumber,
-                    quantity: item.quantity,
-                    categoryId: item.categoryId,
-                },
+            action: "PART_DELETED",
+            entityId: item.id,
+            entityName: item.name,
+            summary: `Deleted part "${item.name}" (${item.partNumber}), which had a quantity of ${item.quantity}.`,
+            performedById: Number(session.user.id),
+            details: {
+                partNumber: item.partNumber,
+                quantity: item.quantity,
+                categoryId: item.categoryId,
             },
-        );
+        });
 
         await tx.item.delete({
             where: { id: item.id },
         });
-    },
-);
+    });
 
     revalidateItemPaths(categoryId);
 

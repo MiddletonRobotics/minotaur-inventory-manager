@@ -89,9 +89,7 @@ export default async function Audit() {
         createdAt: entry.createdAt.toISOString(),
     }));
 
-    const entries = [...adjustmentEntries, ...generalEntries].sort((a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-    ).slice(0, 500);
+    const entries = [...adjustmentEntries, ...generalEntries].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 500);
 
     return (
         <>

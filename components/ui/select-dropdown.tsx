@@ -3,7 +3,7 @@
 import { Check, ChevronDown } from "lucide-react";
 import Dropdown, { dropdownItemCSS } from "@/components/ui/dropdown";
 
-type SelectValue = | string | number;
+type SelectValue = string | number;
 
 export type SelectDropdownOption<T extends SelectValue = string> = {
     value: T;
@@ -49,30 +49,27 @@ export default function SelectDropdown<T extends SelectValue>({ value, options, 
             {({ close }) => (
                 <div role="menu" aria-label={ariaLabel}>
                     {options.map((option) => {
-                            const isSelected = option.value === value;
+                        const isSelected = option.value === value;
 
-                            return (
-                                <button
-                                    key={String(option.value)}
-                                    type="button"
-                                    role="menuitemradio"
-                                    aria-checked={isSelected}
-                                    disabled={option.disabled}
-                                    onClick={() => {
-                                        onChange(option.value);
-                                        close();
-                                    }}
-                                    className={`${dropdownItemCSS} justify-between gap-4 ${isSelected ? "bg-input text-fg" : ""}`}
-                                >
-                                    <span>{option.label}</span>
+                        return (
+                            <button
+                                key={String(option.value)}
+                                type="button"
+                                role="menuitemradio"
+                                aria-checked={isSelected}
+                                disabled={option.disabled}
+                                onClick={() => {
+                                    onChange(option.value);
+                                    close();
+                                }}
+                                className={`${dropdownItemCSS} justify-between gap-4 ${isSelected ? "bg-input text-fg" : ""}`}
+                            >
+                                <span>{option.label}</span>
 
-                                    {isSelected && (
-                                        <Check size={14} className="shrink-0" />
-                                    )}
-                                </button>
-                            );
-                        },
-                    )}
+                                {isSelected && <Check size={14} className="shrink-0" />}
+                            </button>
+                        );
+                    })}
                 </div>
             )}
         </Dropdown>
