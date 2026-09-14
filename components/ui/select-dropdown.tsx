@@ -30,7 +30,8 @@ export default function SelectDropdown<T extends SelectValue>({ value, options, 
     return (
         <Dropdown
             className={className}
-            menuClassName={`min-w-full ${menuClassName}`}
+            menuClassName={menuClassName}
+            matchTriggerWidth
             trigger={({ open, toggle, menuId }) => (
                 <button
                     type="button"
