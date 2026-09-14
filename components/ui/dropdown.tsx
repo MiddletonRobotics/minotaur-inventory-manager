@@ -55,7 +55,7 @@ export default function Dropdown({ trigger, children, align = "right", className
         if (matchTriggerWidth) {
             menuElement.style.width = `${triggerRect.width}px`;
         } else {
-            menuElement.style.removeProperty("width",);
+            menuElement.style.removeProperty("width");
         }
 
         menuElement.style.visibility = "visible";
@@ -65,7 +65,7 @@ export default function Dropdown({ trigger, children, align = "right", className
         if (!open) return;
         updatePosition();
 
-        const frame = requestAnimationFrame(updatePosition,);
+        const frame = requestAnimationFrame(updatePosition);
 
         return () => cancelAnimationFrame(frame);
     }, [open, updatePosition]);
@@ -92,7 +92,7 @@ export default function Dropdown({ trigger, children, align = "right", className
         document.addEventListener("keydown", handleKeyDown);
 
         return () => {
-            window.removeEventListener("scroll", updatePosition,true,);
+            window.removeEventListener("scroll", updatePosition, true);
             window.removeEventListener("resize", updatePosition);
 
             document.removeEventListener("mousedown", handleMouseDown);
@@ -104,14 +104,16 @@ export default function Dropdown({ trigger, children, align = "right", className
 
     return (
         <>
-            <div ref={containerRef} className={`relative ${className}`}>{trigger(renderProps)}</div>
+            <div ref={containerRef} className={`relative ${className}`}>
+                {trigger(renderProps)}
+            </div>
             {open &&
                 createPortal(
-                    <div ref={menuRef} id={menuId} style={{position: "fixed", top: 0, left: 0, visibility: "hidden"}} className={`z-50 rounded-md border border-border bg-card p-1 shadow-xl ${menuClassName}`}>
-                        {children(renderProps,)}
+                    <div ref={menuRef} id={menuId} style={{ position: "fixed", top: 0, left: 0, visibility: "hidden" }} className={`z-50 rounded-md border border-border bg-card p-1 shadow-xl ${menuClassName}`}>
+                        {children(renderProps)}
                     </div>,
 
-                    document.body,
+                    document.body
                 )}
         </>
     );
