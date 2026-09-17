@@ -5,8 +5,10 @@ import { redirect } from "next/navigation";
 import prisma from "@/prisma/prisma";
 import { authenticate, Session } from "@/server/session";
 import { writeAuditLog } from "./audit";
+import { createActionLogger } from "@/server/action-logger";
 import { z } from "zod";
 
+const itemLogger = createActionLogger("items");
 const ItemSchema = z.object({
     name: z.string().trim().min(1, "Part name is required.").max(100),
     partNumber: z.string().trim().min(1, "Part number is required.").max(100),
@@ -161,13 +163,13 @@ export async function createItem(categoryId: number, _previousState: CreateItemS
 }
 
 export async function editItem(itemId: number, categoryId: number, _previousState: ItemActionState, formData: FormData): Promise<ItemActionState> {
-    await requireInventoryManager();
-
+    const session = await requireInventoryManager();
     const item = await prisma.item.findUnique({
         where: { id: itemId },
     });
 
     if (!item || item.categoryId !== categoryId) {
+        await itemLogger.rejected(session, "Part edit", "part_not_found", { itemId, categoryId });
         return { error: "Part does not exist." };
     }
 
@@ -180,6 +182,7 @@ export async function editItem(itemId: number, categoryId: number, _previousStat
     });
 
     if (!parsed.success) {
+        await itemLogger.rejected(session, "Part edit", "invalid_form_data", { itemId, categoryId });
         return { error: parsed.error.issues[0]?.message ?? "Invalid part information." };
     }
 
@@ -192,13 +195,47 @@ export async function editItem(itemId: number, categoryId: number, _previousStat
     });
 
     if (duplicate) {
+        await itemLogger.rejected(session, "Part edit", "duplicate_part_number", {
+            itemId,
+            conflictingItemId: duplicate.id,
+        });
+
         return { error: "Another part already uses that part number." };
     }
 
     const relations = await validateVendorAndLocation(vendorId, locationId);
 
     if ("error" in relations) {
+        await itemLogger.rejected(session, "Part edit", "invalid_relation", {
+            itemId,
+            vendorId,
+            locationId: locationId ?? null,
+        });
+
         return { error: relations.error };
+    }
+
+    const nextDescription = description ?? "";
+    const changedFields: string[] = [];
+
+    if (item.name !== name) {
+        changedFields.push("name");
+    }
+
+    if (item.partNumber !== partNumber) {
+        changedFields.push("partNumber");
+    }
+
+    if (item.vendorId !== relations.vendorId) {
+        changedFields.push("vendorId");
+    }
+
+    if (item.locationId !== relations.locationId) {
+        changedFields.push("locationId");
+    }
+
+    if (item.description !== nextDescription) {
+        changedFields.push("description");
     }
 
     await prisma.item.update({
@@ -208,9 +245,22 @@ export async function editItem(itemId: number, categoryId: number, _previousStat
             partNumber,
             vendorId: relations.vendorId,
             locationId: relations.locationId,
-            description: description ?? "",
+            description: nextDescription,
         },
     });
+
+    if (changedFields.length > 0) {
+        await itemLogger.completed(session, "Part edit", {
+            itemId,
+            categoryId,
+            changedFields,
+        });
+    } else {
+        await itemLogger.debug(session, "Part edit contained no changes", {
+            itemId,
+            categoryId,
+        });
+    }
 
     revalidateItemPaths(categoryId);
 
@@ -278,7 +328,13 @@ export async function adjustItemQuantity(itemId: number, categoryId: number, _pr
         return { success: `Quantity changed from ${item.quantity} to ${newQuantity}.` };
     });
 
-    if ("error" in result) {
+    if (result?.error) {
+        await itemLogger.rejected(session, "Quantity adjustment", result.error, {
+            itemId,
+            categoryId,
+            quantityDelta,
+        });
+
         return result;
     }
 
@@ -309,10 +365,21 @@ export async function deleteItem(itemId: number, categoryId: number, _previousSt
     });
 
     if (!item || item.categoryId !== categoryId) {
+        await itemLogger.rejected(session, "Part deletion", "part_not_found", {
+            itemId,
+            categoryId,
+        });
+
         return { error: "This part does not exist in this subcategory." };
     }
 
     if (item._count.checkouts > 0 || item._count.adjustments > 0) {
+        await itemLogger.rejected(session, "Part deletion", "inventory_history_exists", {
+            itemId: item.id,
+            checkoutCount: item._count.checkouts,
+            adjustmentCount: item._count.adjustments,
+        });
+
         return { error: "This part cannot be deleted because it has inventory history." };
     }
 

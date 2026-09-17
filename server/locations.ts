@@ -4,9 +4,11 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { writeAuditLog } from "./audit";
+import { createActionLogger } from "@/server/action-logger";
 import prisma from "@/prisma/prisma";
 import { authenticate, Session } from "@/server/session";
 
+const locationLogger = createActionLogger("locations");
 const LocationSchema = z.object({
     name: z.string().trim().min(1, "Location name is required.").max(80, "Location name is too long."),
 });
@@ -50,6 +52,7 @@ export async function createStorageLocation(_previousState: LocationActionState,
         parentId = Number(parentValue);
 
         if (!Number.isInteger(parentId)) {
+            await locationLogger.rejected(session, "Location creation", "invalid_parent_id", { parentValue });
             return { error: "Invalid parent location." };
         }
 
@@ -63,14 +66,25 @@ export async function createStorageLocation(_previousState: LocationActionState,
         });
 
         if (!parent || !parent.active) {
+            await locationLogger.rejected(session, "Location creation", "parent_missing_or_inactive", { parentId });
             return { error: "Selected parent location does not exist." };
         }
 
         if (parent.parentId !== null) {
+            await locationLogger.rejected(session, "Location creation", "maximum_depth_exceeded", {
+                parentId: parent.id,
+                parentParentId: parent.parentId,
+            });
+
             return { error: "A child location cannot contain another location." };
         }
 
         if (parent._count.items > 0) {
+            await locationLogger.rejected(session, "Location creation", "parent_contains_parts", {
+                parentId: parent.id,
+                partCount: parent._count.items,
+            });
+
             return { error: "Parts are stored directly in this location. Move them before adding a child location." };
         }
 
@@ -178,18 +192,35 @@ export async function deactivateStorageLocation(locationId: number, _previousSta
     }
 
     if (location._count.items > 0) {
+        await locationLogger.rejected(session, "Location deactivation", "location_contains_parts", {
+            locationId: location.id,
+            partCount: location._count.items,
+        });
+
         return { error: `${location.name} cannot be removed because ${location._count.items} ${location._count.items === 1 ? "part uses" : "parts use"} this location.` };
     }
 
     const activeChildren = location.children.filter((child) => child.active);
 
     if (activeChildren.length > 0) {
+        await locationLogger.rejected(session, "Location deactivation", "active_children_exist", {
+            locationId: location.id,
+            activeChildCount: activeChildren.length,
+            activeChildIds: activeChildren.map((child) => child.id),
+        });
+
         return { error: "This location cannot be removed because it still has active child locations." };
     }
 
     const childWithParts = location.children.find((child) => child._count.items > 0);
 
     if (childWithParts) {
+        await locationLogger.rejected(session, "Location deactivation", "child_contains_parts", {
+            locationId: location.id,
+            childLocationId: childWithParts.id,
+            partCount: childWithParts._count.items,
+        });
+
         return { error: `${childWithParts.name} still contains parts. Move those parts before removing ${location.name}.` };
     }
 

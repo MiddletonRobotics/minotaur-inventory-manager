@@ -3,9 +3,11 @@
 import { z } from "zod";
 import { compare } from "bcryptjs";
 import { redirect } from "next/navigation";
-
 import prisma from "../prisma/prisma";
-import { createSession, deleteSession } from "./session";
+import { authenticate, createSession, deleteSession } from "./session";
+import { logger } from "@/server/logger";
+
+const authLog = logger.child("auth");
 
 const LoginSchema = z.object({
     firstName: z.string().trim().min(1).max(50),
@@ -23,6 +25,7 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
     });
 
     if (!parsed.success) {
+        await authLog.warn("Login rejected", { reason: "Invalid login form" });
         return { error: "Please fill in all fields." };
     }
 
@@ -45,11 +48,16 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
     }
 
     await createSession(String(user.id));
+    await authLog.info("Login successful", { userId: user.id, role: user.type });
 
     redirect("/");
 }
 
 export async function logout(): Promise<never> {
+    const session = await authenticate();
+
     await deleteSession();
+    await authLog.info("Logout", { userId: session ? Number(session.user.id) : null });
+
     redirect("/login");
 }

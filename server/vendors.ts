@@ -4,9 +4,11 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { writeAuditLog } from "./audit";
+import { createActionLogger } from "./action-logger";
 import prisma from "@/prisma/prisma";
 import { authenticate, Session } from "@/server/session";
 
+const vendorLogger = createActionLogger("vendors");
 const VendorSchema = z.object({
     name: z.string().trim().min(1, "Vendor name is required.").max(80, "Vendor name is too long."),
 });
@@ -66,6 +68,11 @@ export async function createVendor(_previousState: VendorActionState, formData: 
                     performedById,
                     details: { active: true },
                 });
+
+                vendorLogger.completed(session, "Vendor reactivation", {
+                    vendorId: existing.id,
+                    vendorName: existing.name,
+                });
             });
 
             revalidateVendors();
@@ -88,6 +95,11 @@ export async function createVendor(_previousState: VendorActionState, formData: 
             summary: `Created vendor "${vendor.name}".`,
             performedById,
         });
+
+        vendorLogger.completed(session, "Vendor creation", {
+            vendorId: vendor.id,
+            vendorName: vendor.name,
+        });
     });
 
     revalidateVendors();
@@ -105,10 +117,19 @@ export async function deactivateVendor(vendorId: number, _previousState: VendorA
     });
 
     if (!vendor) {
+        vendorLogger.rejected(session, "Vendor deactivation", "vendor_does_not_exist", {
+            targetUserId: performedById,
+        });
+
         return { error: "Vendor does not exist." };
     }
 
     if (!vendor.active) {
+        vendorLogger.debug(session, "Vendor deactivation", {
+            vendorId: vendor.id,
+            vendorName: vendor.name,
+        });
+
         return { success: "Vendor is already inactive." };
     }
 
@@ -126,6 +147,11 @@ export async function deactivateVendor(vendorId: number, _previousState: VendorA
             performedById,
             details: { active: false },
         });
+    });
+
+    vendorLogger.completed(session, "Vendor deactivation", {
+        vendorId: vendor.id,
+        vendorName: vendor.name,
     });
 
     revalidateVendors();
