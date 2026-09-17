@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { writeAuditLog } from "./audit";
+import { createActionLogger } from "@/server/action-logger";
 import { authenticate, Session } from "@/server/session";
 import prisma from "@/prisma/prisma";
 
@@ -25,6 +26,7 @@ function getRequiredEnv(name: string): string {
     return value;
 }
 
+const accountLogger = createActionLogger("accounts");
 const standardUserPassword = getRequiredEnv("TEAM_PASSWORD");
 
 if (!standardUserPassword) {
@@ -107,6 +109,10 @@ export async function createUser(_previousState: CreateUserState, formData: Form
 
         for (const user of privilegedUsers) {
             if (await compare(password, user.pwdHash)) {
+                await accountLogger.rejected(session, "User creation", "manager_used_team_password", {
+                    requestedRole: role,
+                });
+
                 return { error: "Manager passwords must be unique." };
             }
         }
@@ -121,6 +127,11 @@ export async function createUser(_previousState: CreateUserState, formData: Form
     });
 
     if (existingUser) {
+        await accountLogger.rejected(session, "User creation", existingUser.active ? "user_already_exists" : "inactive_user_already_exists", {
+            existingUserId: existingUser.id,
+            requestedRole: role,
+        });
+
         return { error: existingUser.active ? "A user with that name already exists." : "A deactivated user with that name already exists. Reactivate that account instead." };
     }
 
@@ -144,6 +155,11 @@ export async function createUser(_previousState: CreateUserState, formData: Form
             performedById,
             details: { role },
         });
+    });
+
+    await accountLogger.completed(session, "User creation", {
+        createdUserName: `${firstName} ${lastName}`,
+        createdRole: role,
     });
 
     revalidateAccounts();
@@ -171,6 +187,10 @@ export async function deactivateUser(userId: number): Promise<void> {
     }
 
     if (user.type === "ADMINISTRATOR") {
+        await accountLogger.rejected(session, "User deactivation", "administrator_protected", {
+            targetUserId: user.id,
+        });
+
         return;
     }
 
@@ -188,6 +208,11 @@ export async function deactivateUser(userId: number): Promise<void> {
             performedById,
             details: { role: user.type },
         });
+    });
+
+    await accountLogger.completed(session, "User deactivation", {
+        targetUserId: user.id,
+        targetRole: user.type,
     });
 
     revalidateAccounts();
@@ -213,10 +238,18 @@ export async function reactivateUser(userId: number, _previousState: ReactivateU
     }
 
     if (user.active) {
+        await accountLogger.rejected(session, "User reactivation", "user_already_active", {
+            targetUserId: user.id,
+        });
+
         return { error: "This user is already active." };
     }
 
     if (user.type === "ADMINISTRATOR") {
+        await accountLogger.rejected(session, "User reactivation", "administrator_protected", {
+            targetUserId: user.id,
+        });
+
         return { error: "Administrator accounts cannot be reactivated here." };
     }
 
@@ -228,10 +261,18 @@ export async function reactivateUser(userId: number, _previousState: ReactivateU
         const password = formData.get("password");
 
         if (typeof password !== "string" || password.length < 8) {
+            await accountLogger.rejected(session, "User reactivation", "manager_password_invalid_length", {
+                targetUserId: user.id,
+            });
+
             return { error: "Managers must have a password of at least 8 characters." };
         }
 
         if (password === standardUserPassword) {
+            await accountLogger.rejected(session, "User reactivation", "manager_used_team_password", {
+                targetUserId: user.id,
+            });
+
             return { error: "Managers cannot use the standard team password." };
         }
 
@@ -247,6 +288,10 @@ export async function reactivateUser(userId: number, _previousState: ReactivateU
             const passwordAlreadyUsed = await compare(password, privilegedUser.pwdHash);
 
             if (passwordAlreadyUsed) {
+                await accountLogger.rejected(session, "User reactivation", "privileged_password_not_unique", {
+                    targetUserId: user.id,
+                });
+
                 return { error: "Manager passwords must be unique." };
             }
         }
@@ -275,6 +320,11 @@ export async function reactivateUser(userId: number, _previousState: ReactivateU
         });
     });
 
+    await accountLogger.completed(session, "User reactivation", {
+        targetUserId: user.id,
+        targetRole: user.type,
+    });
+
     revalidateAccounts();
 
     return { success: `${user.firstName} ${user.lastName} was reactivated.` };
@@ -296,28 +346,52 @@ export async function promoteUser(userId: number, _previousState: PromoteUserSta
     });
 
     if (!user || !user.active) {
+        await accountLogger.rejected(session, "User promotion", "user_missing_or_inactive", {
+            targetUserId: userId,
+        });
+
         return { error: "User does not exist or is deactivated." };
     }
 
     if (user.type === "ADMINISTRATOR") {
+        await accountLogger.rejected(session, "User promotion", "administrator_protected", {
+            targetUserId: user.id,
+        });
+
         return { error: "Administrator roles cannot be changed here." };
     }
 
     if (user.type === "MANAGER") {
+        await accountLogger.rejected(session, "User promotion", "already_manager", {
+            targetUserId: user.id
+        });
+
         return { error: "This user is already a Manager." };
     }
 
     const password = formData.get("password");
 
     if (typeof password !== "string" || password.length < 8 || password.length > 100) {
+        accountLogger.rejected(session, "User promotion", "manager_password_invalid", {
+            targetUserId: user.id
+        });
+
         return { error: "Managers must have a password between 8 and 100 characters." };
     }
 
     if (password === standardUserPassword) {
+        accountLogger.rejected(session, "User promotion", "manager_used_team_password", {
+            targetUserId: user.id
+        });
+
         return { error: "Managers cannot use the standard team password." };
     }
 
     if (await isPrivilegedPasswordInUse(password)) {
+        accountLogger.rejected(session, "User promotion", "privileged_password_not_unique", {
+            targetUserId: user.id
+        });
+
         return { error: "Manager passwords must be unique." };
     }
 
@@ -345,6 +419,12 @@ export async function promoteUser(userId: number, _previousState: PromoteUserSta
         });
     });
 
+    await accountLogger.completed(session, "User promotion", {
+        targetUserId: user.id,
+        previousRole: "STANDARD",
+        newRole: "MANAGER",
+    });
+
     revalidateAccounts();
 
     return { success: `${user.firstName} ${user.lastName} was promoted to Manager.` };
@@ -366,6 +446,11 @@ export async function demoteUser(userId: number): Promise<void> {
     });
 
     if (!user || !user.active || user.type !== "MANAGER") {
+        await accountLogger.debug(session, "User demotion skipped", {
+            targetUserId: userId,
+            reason: "target_not_active_manager"
+        });
+
         return;
     }
 
@@ -391,6 +476,12 @@ export async function demoteUser(userId: number): Promise<void> {
                 newRole: "STANDARD",
             },
         });
+    });
+
+    await accountLogger.completed(session, "User demotion", {
+        targetUserId: user.id,
+        previousRole: "MANAGER",
+        newRole: "STANDARD",
     });
 
     revalidateAccounts();

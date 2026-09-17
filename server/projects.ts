@@ -5,8 +5,10 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { authenticate, Session } from "@/server/session";
 import { writeAuditLog } from "./audit";
+import { createActionLogger } from "./action-logger";
 import prisma from "@/prisma/prisma";
 
+const projectLogger = createActionLogger("projects");
 const CreateProjectSchema = z.object({
     name: z.string().trim().min(1, "Project name is required.").max(100, "Project name is too long."),
     description: z.string().trim().max(500, "Description is too long.").optional(),
@@ -17,13 +19,8 @@ export type ProjectActionState = { error?: string; success?: string } | undefine
 async function requireProjectManager() {
     const session = await authenticate();
 
-    if (!session) {
-        redirect("/login");
-    }
-
-    if (session.user.role !== "MANAGER" && session.user.role !== "ADMINISTRATOR") {
-        redirect("/");
-    }
+    if (!session) redirect("/login");
+    if (session.user.role !== "MANAGER" && session.user.role !== "ADMINISTRATOR") redirect("/");
 
     return session;
 }
@@ -46,6 +43,10 @@ export async function createProject(_previousState: ProjectActionState, formData
     });
 
     if (existingProject) {
+        projectLogger.rejected(session, "Project creation", "project_name_not_unique", {
+            projectId: name,
+        });
+
         return { error: "A project with that name already exists." };
     }
 
@@ -68,6 +69,11 @@ export async function createProject(_previousState: ProjectActionState, formData
             details: {
                 description: project.description ?? "",
             },
+        });
+
+        projectLogger.completed(session, "Project creation", {
+            projectId: project.id,
+            projectName: project.name
         });
     });
 
@@ -95,6 +101,11 @@ export async function archiveProject(projectId: number): Promise<void> {
     }
 
     if (project.status === "ARCHIVED") {
+        projectLogger.debug(session, "Project archival skipped", {
+            projectId: project.id,
+            projectName: project.name
+        });
+
         return;
     }
 
@@ -114,6 +125,11 @@ export async function archiveProject(projectId: number): Promise<void> {
             summary: `Archived project "${project.name}".`,
             performedById: Number(session.user.id),
         });
+    });
+
+    projectLogger.completed(session, "Project archival", {
+        projectId: project.id,
+        projectName: project.name
     });
 
     revalidatePath("/settings/projects");

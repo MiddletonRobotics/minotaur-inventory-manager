@@ -4,9 +4,12 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { writeAuditLog } from "./audit";
+import { createActionLogger } from "@/server/action-logger";
+
 import { authenticate, Session } from "@/server/session";
 import prisma from "@/prisma/prisma";
 
+const categoryLogger = createActionLogger("categories");
 const CreateCategorySchema = z
     .object({
         name: z.string().trim().min(1, "Category name is required.").max(80, "Category name is too long."),
@@ -66,6 +69,11 @@ export async function createCategory(_previousState: CategoryActionState, formDa
     });
 
     if (existingCategory) {
+        categoryLogger.rejected(session, "Category creation", "category_name_not_unique", {
+            categoryId: existingCategory.id,
+            categoryName: existingCategory.name
+        });
+
         return { error: "A category with that name already exists." };
     }
 
@@ -76,9 +84,11 @@ export async function createCategory(_previousState: CategoryActionState, formDa
         const parsedParentId = Number(parentId);
 
         if (!Number.isInteger(parsedParentId)) {
-            return {
-                error: "Invalid parent category.",
-            };
+            categoryLogger.rejected(session, "Category creation", "category_name_not_unique", {
+                targetCategoryId: parsedParentId
+            });
+
+            return { error: "Invalid parent category." };
         }
 
         const parent = await prisma.category.findUnique({
@@ -91,10 +101,19 @@ export async function createCategory(_previousState: CategoryActionState, formDa
         });
 
         if (!parent) {
+            categoryLogger.rejected(session, "Category creation", "category_does_not_exist", {
+                targetUserId: session.user.id
+            });
+
             return { error: "Parent category does not exist." };
         }
 
         if (parent.parentId !== null) {
+            categoryLogger.rejected(session, "Category creation", "subcategories_cannot_be_nested", {
+                categoryId: parent.id,
+                categoryName: parent.name,
+            });
+
             return { error: "Subcategories cannot contain other subcategories." };
         }
 
@@ -118,14 +137,12 @@ export async function createCategory(_previousState: CategoryActionState, formDa
             entityName: category.name,
             summary: isSubcategory ? `Created subcategory "${category.name}" under "${parentName}".` : `Created category "${category.name}".`,
             performedById: Number(session.user.id),
-            details: isSubcategory
-                ? {
-                      parentId: resolvedParentId!,
-                      parentName: parentName!,
-                  }
-                : {
-                      level: "CATEGORY",
-                  },
+            details: isSubcategory ? { parentId: resolvedParentId!,  parentName: parentName! } : { level: "CATEGORY" },
+        });
+
+        categoryLogger.completed(session, "Category creation", {
+            categoryId: category.id,
+            categoryName: category.name,
         });
     });
 
@@ -159,10 +176,20 @@ export async function deleteCategory(categoryId: number): Promise<void> {
     }
 
     if (category._count.children > 0) {
+        categoryLogger.rejected(session, "Category deletion", "category_contains_parts", {
+            categoryId: category.id,
+            categoryName: category.name,
+        });
+
         throw new Error("A category containing subcategories cannot be deleted.");
     }
 
     if (category._count.items > 0) {
+        categoryLogger.rejected(session, "Category deletion", "subcategory_contains_parts", {
+            categoryId: category.id,
+            categoryName: category.name,
+        });
+
         throw new Error("A subcategory containing inventory items cannot be deleted.");
     }
 
@@ -189,20 +216,31 @@ export async function deleteCategory(categoryId: number): Promise<void> {
         });
     });
 
+    categoryLogger.completed(session, "Category deletion", {
+        categoryId: category.id,
+        categoryName: category.name,
+    });
+
     revalidateInventoryPaths();
 }
 
 export async function relocateSubcategory(subcategoryId: number, _previousState: CategoryBulkActionState, formData: FormData): Promise<CategoryBulkActionState> {
-    await requireInventoryManager();
+    const session = await requireInventoryManager();
     const newParentId = Number(formData.get("parentId"));
 
     if (!Number.isInteger(newParentId)) {
-        return { error: "Select a valid parent category." };
+        await categoryLogger.rejected(session, "Subcategory relocation", "invalid_parent_id", {
+            subcategoryId,
+        });
+
+        return { error:"Select a valid parent category." };
     }
 
     const [subcategory, newParent] = await Promise.all([
         prisma.category.findUnique({
-            where: { id: subcategoryId },
+            where: {
+                id: subcategoryId,
+            },
             select: {
                 id: true,
                 name: true,
@@ -211,7 +249,9 @@ export async function relocateSubcategory(subcategoryId: number, _previousState:
         }),
 
         prisma.category.findUnique({
-            where: { id: newParentId },
+            where: {
+                id: newParentId,
+            },
             select: {
                 id: true,
                 name: true,
@@ -221,10 +261,20 @@ export async function relocateSubcategory(subcategoryId: number, _previousState:
     ]);
 
     if (!subcategory || subcategory.parentId === null) {
+        await categoryLogger.rejected(session, "Subcategory relocation", "invalid_subcategory", {
+            subcategoryId,
+            newParentId,
+        });
+
         return { error: "Only subcategories can be relocated." };
     }
 
     if (!newParent || newParent.parentId !== null) {
+        await categoryLogger.rejected(session, "Subcategory relocation", "invalid_destination_parent", {
+            subcategoryId,
+            newParentId,
+        });
+
         return { error: "The new parent must be a top-level category" };
     }
 
@@ -232,9 +282,21 @@ export async function relocateSubcategory(subcategoryId: number, _previousState:
         return { error: `${subcategory.name} is already under ${newParent.name}.` };
     }
 
+    const previousParentId = subcategory.parentId;
+
     await prisma.category.update({
-        where: { id: subcategory.id },
-        data: { parentId: newParent.id },
+        where: {
+            id: subcategory.id,
+        },
+        data: {
+            parentId: newParent.id,
+        },
+    });
+
+    await categoryLogger.completed(session, "Subcategory relocation", {
+        subcategoryId: subcategory.id,
+        previousParentId,
+        newParentId: newParent.id,
     });
 
     revalidateInventoryPaths();
@@ -243,20 +305,27 @@ export async function relocateSubcategory(subcategoryId: number, _previousState:
 }
 
 export async function moveAllItems(sourceSubcategoryId: number, _previousState: CategoryBulkActionState, formData: FormData): Promise<CategoryBulkActionState> {
-    await requireInventoryManager();
+    const session = await requireInventoryManager();
     const targetSubcategoryId = Number(formData.get("targetCategoryId"));
 
     if (!Number.isInteger(targetSubcategoryId)) {
+        await categoryLogger.rejected(session, "Bulk part move", "invalid_destination", {
+            sourceSubcategoryId,
+        }); 
+
         return { error: "Select a valid destination subcategory" };
     }
 
     if (sourceSubcategoryId === targetSubcategoryId) {
+        await categoryLogger.rejected(session, "Bulk part move", "same_source_and_destination", { sourceSubcategoryId });
         return { error: "Source and destination subcategories must be different" };
     }
 
     const [source, target] = await Promise.all([
         prisma.category.findUnique({
-            where: { id: sourceSubcategoryId },
+            where: {
+                id: sourceSubcategoryId,
+            },
             select: {
                 id: true,
                 name: true,
@@ -265,7 +334,9 @@ export async function moveAllItems(sourceSubcategoryId: number, _previousState: 
         }),
 
         prisma.category.findUnique({
-            where: { id: targetSubcategoryId },
+            where: {
+                id: targetSubcategoryId,
+            },
             select: {
                 id: true,
                 name: true,
@@ -275,23 +346,41 @@ export async function moveAllItems(sourceSubcategoryId: number, _previousState: 
     ]);
 
     if (!source || source.parentId === null) {
+        await categoryLogger.rejected(session, "Bulk part move", "invalid_source", {
+            sourceSubcategoryId,
+            targetSubcategoryId,
+        });
+
         return { error: "The source must be a subcategory" };
     }
 
     if (!target || target.parentId === null) {
+        await categoryLogger.rejected(session, "Bulk part move", "invalid_destination", {
+            sourceSubcategoryId,
+            targetSubcategoryId,
+        });
+
         return { error: "The destination must be a subcategory" };
     }
 
     const result = await prisma.item.updateMany({
-        where: { categoryId: source.id },
-        data: { categoryId: target.id },
+        where: {
+            categoryId: source.id,
+        },
+        data: {
+            categoryId: target.id,
+        },
+    });
+
+    await categoryLogger.completed(session, "Bulk part move", {
+        sourceCategoryId: source.id,
+        destinationCategoryId: target.id,
+        itemsMoved: result.count,
     });
 
     revalidateInventoryPaths();
 
-    return {
-        success: result.count === 0 ? `${source.name} did not contain any parts to move.` : `${result.count} ${result.count === 1 ? "part was" : "parts were"} moved from ${source.name} to ${target.name}.`,
-    };
+    return { success: result.count === 0 ? `${source.name} did not contain any parts to move.` : `${result.count} ${result.count === 1 ? "part was" : "parts were"} moved from ${source.name} to ${target.name}.` };
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -311,6 +400,7 @@ export async function deleteAllItems(sourceSubcategoryId: number, _previousState
     });
 
     if (!source || source.parentId === null) {
+        await categoryLogger.rejected(session, "Bulk part deletion", "invalid_source", { sourceSubcategoryId });
         return { error: "Only subcategories can directly contain parts" };
     }
 
@@ -334,6 +424,11 @@ export async function deleteAllItems(sourceSubcategoryId: number, _previousState
     });
 
     if (itemWithHistory) {
+        await categoryLogger.rejected(session, "Bulk part deletion", "inventory_history_exists", {
+            sourceSubcategoryId: source.id,
+            blockingItemId: itemWithHistory.id,
+        });
+
         return { error: "These parts cannot be deleted because one or more have inventory or project history." };
     }
 
@@ -369,6 +464,11 @@ export async function deleteAllItems(sourceSubcategoryId: number, _previousState
                 categoryId: source.id,
             },
         });
+    });
+
+    await categoryLogger.completed(session, "Bulk part deletion", {
+        sourceSubcategoryId: source.id,
+        itemsDeleted: result.count,
     });
 
     revalidateInventoryPaths();
