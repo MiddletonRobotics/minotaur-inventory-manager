@@ -3,7 +3,7 @@ import "server-only";
 import { appendFile, mkdir, readdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 
-export type LogLevel = | "debug" | "info" | "warn" | "error";
+export type LogLevel = "debug" | "info" | "warn" | "error";
 export type LogMetadata = Record<string, unknown>;
 
 const levelPriority: Record<LogLevel, number> = { debug: 10, info: 20, warn: 30, error: 40 };
@@ -25,13 +25,13 @@ function parsePositiveInteger(value: string | undefined): number | null {
 
     const parsed = Number(value);
 
-    if (!Number.isInteger(parsed) || parsed <= 0)  return null;
-    
+    if (!Number.isInteger(parsed) || parsed <= 0) return null;
+
     return parsed;
 }
 
 function shouldLog(level: LogLevel) {
-    return (levelPriority[level] >= levelPriority[configuredLevel]);
+    return levelPriority[level] >= levelPriority[configuredLevel];
 }
 
 async function ensureLogDirectory() {
@@ -46,7 +46,7 @@ function sanitize(value: unknown, key?: string, seen = new WeakSet<object>(), de
     if (key && sensitiveKeyPattern.test(key)) return "[REDACTED]";
     if (value === null || typeof value !== "object") {
         if (typeof value === "bigint") return value.toString();
-        if (typeof value === "string" && value.length > 5000) return (value.slice(0, 5000) + "...[truncated]");
+        if (typeof value === "string" && value.length > 5000) return value.slice(0, 5000) + "...[truncated]";
 
         return value;
     }
@@ -61,18 +61,13 @@ function sanitize(value: unknown, key?: string, seen = new WeakSet<object>(), de
             name: value.name,
             message: value.message,
             stack: value.stack,
-            cause: value.cause === undefined ? undefined : sanitize(value.cause, "cause", seen, depth + 1,),
+            cause: value.cause === undefined ? undefined : sanitize(value.cause, "cause", seen, depth + 1),
         };
     }
 
     if (value instanceof Date) return value.toISOString();
     if (Array.isArray(value)) {
-        return value.map((entry) => sanitize(
-            entry,
-            undefined,
-            seen,
-            depth + 1,
-        ));
+        return value.map((entry) => sanitize(entry, undefined, seen, depth + 1));
     }
 
     const result: Record<string, unknown> = {};
@@ -115,16 +110,18 @@ function queueFileWrite(line: string, timestamp: string): Promise<void> {
     const date = timestamp.slice(0, 10);
     const filePath = join(logDirectory, `${date}.log`);
 
-    writeQueue = writeQueue.then(async () => {
-        await ensureLogDirectory();
+    writeQueue = writeQueue
+        .then(async () => {
+            await ensureLogDirectory();
 
-        await appendFile(filePath, `${line}\n`, {
-            encoding: "utf8",
-            mode: 0o600,
-        }); 
-    }).catch((error: unknown) => {
-        console.error("Failed to write application log:", error);
-    });
+            await appendFile(filePath, `${line}\n`, {
+                encoding: "utf8",
+                mode: 0o600,
+            });
+        })
+        .catch((error: unknown) => {
+            console.error("Failed to write application log:", error);
+        });
 
     return writeQueue;
 }
@@ -153,7 +150,7 @@ export async function pruneOldLogs() {
         const match = /^(\d{4}-\d{2}-\d{2})\.log$/.exec(entry.name);
 
         if (!match) continue;
-    
+
         const fileDate = Date.parse(`${match[1]}T00:00:00.000Z`);
 
         if (Number.isNaN(fileDate) || fileDate >= cutoff) continue;
@@ -166,30 +163,36 @@ export async function pruneOldLogs() {
     return removed;
 }
 
-export const logger = { debug(scope: string, message: string, metadata?: LogMetadata) {
-    return log("debug", scope, message, metadata);
-}, info(scope: string, message: string, metadata?: LogMetadata) {
-    return log("info", scope, message, metadata);
-}, warn(scope: string, message: string, metadata?: LogMetadata) {
-    return log("warn", scope, message, metadata);
-}, error(scope: string, message: string, metadata?: LogMetadata) {
-    return log("error", scope, message, metadata);
-}, child(scope: string) {
-    return {
-        debug(message: string, metadata?: LogMetadata) {
-            return log("debug", scope, message, metadata);
-        },
+export const logger = {
+    debug(scope: string, message: string, metadata?: LogMetadata) {
+        return log("debug", scope, message, metadata);
+    },
+    info(scope: string, message: string, metadata?: LogMetadata) {
+        return log("info", scope, message, metadata);
+    },
+    warn(scope: string, message: string, metadata?: LogMetadata) {
+        return log("warn", scope, message, metadata);
+    },
+    error(scope: string, message: string, metadata?: LogMetadata) {
+        return log("error", scope, message, metadata);
+    },
+    child(scope: string) {
+        return {
+            debug(message: string, metadata?: LogMetadata) {
+                return log("debug", scope, message, metadata);
+            },
 
-        info(message: string, metadata?: LogMetadata) {
-            return log("info", scope, message, metadata);
-        },
+            info(message: string, metadata?: LogMetadata) {
+                return log("info", scope, message, metadata);
+            },
 
-        warn(message: string, metadata?: LogMetadata) {
-            return log("warn", scope, message, metadata);
-        },
+            warn(message: string, metadata?: LogMetadata) {
+                return log("warn", scope, message, metadata);
+            },
 
-        error(message: string, metadata?: LogMetadata) {
-            return log("error", scope, message, metadata);
-        },
-    }},
+            error(message: string, metadata?: LogMetadata) {
+                return log("error", scope, message, metadata);
+            },
+        };
+    },
 };

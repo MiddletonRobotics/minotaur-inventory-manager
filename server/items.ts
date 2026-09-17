@@ -176,7 +176,7 @@ export async function editItem(itemId: number, categoryId: number, _previousStat
     const parsed = ItemSchema.safeParse({
         name: formData.get("name"),
         partNumber: formData.get("partNumber"),
-        vendorId: formData.get("vendorId",),
+        vendorId: formData.get("vendorId"),
         locationId: formData.get("locationId") || undefined,
         description: formData.get("description") || undefined,
     });

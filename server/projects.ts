@@ -73,7 +73,7 @@ export async function createProject(_previousState: ProjectActionState, formData
 
         projectLogger.completed(session, "Project creation", {
             projectId: project.id,
-            projectName: project.name
+            projectName: project.name,
         });
     });
 
@@ -103,7 +103,7 @@ export async function archiveProject(projectId: number): Promise<void> {
     if (project.status === "ARCHIVED") {
         projectLogger.debug(session, "Project archival skipped", {
             projectId: project.id,
-            projectName: project.name
+            projectName: project.name,
         });
 
         return;
@@ -129,7 +129,7 @@ export async function archiveProject(projectId: number): Promise<void> {
 
     projectLogger.completed(session, "Project archival", {
         projectId: project.id,
-        projectName: project.name
+        projectName: project.name,
     });
 
     revalidatePath("/settings/projects");

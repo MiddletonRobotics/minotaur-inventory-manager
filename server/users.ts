@@ -363,7 +363,7 @@ export async function promoteUser(userId: number, _previousState: PromoteUserSta
 
     if (user.type === "MANAGER") {
         await accountLogger.rejected(session, "User promotion", "already_manager", {
-            targetUserId: user.id
+            targetUserId: user.id,
         });
 
         return { error: "This user is already a Manager." };
@@ -373,7 +373,7 @@ export async function promoteUser(userId: number, _previousState: PromoteUserSta
 
     if (typeof password !== "string" || password.length < 8 || password.length > 100) {
         accountLogger.rejected(session, "User promotion", "manager_password_invalid", {
-            targetUserId: user.id
+            targetUserId: user.id,
         });
 
         return { error: "Managers must have a password between 8 and 100 characters." };
@@ -381,7 +381,7 @@ export async function promoteUser(userId: number, _previousState: PromoteUserSta
 
     if (password === standardUserPassword) {
         accountLogger.rejected(session, "User promotion", "manager_used_team_password", {
-            targetUserId: user.id
+            targetUserId: user.id,
         });
 
         return { error: "Managers cannot use the standard team password." };
@@ -389,7 +389,7 @@ export async function promoteUser(userId: number, _previousState: PromoteUserSta
 
     if (await isPrivilegedPasswordInUse(password)) {
         accountLogger.rejected(session, "User promotion", "privileged_password_not_unique", {
-            targetUserId: user.id
+            targetUserId: user.id,
         });
 
         return { error: "Manager passwords must be unique." };
@@ -448,7 +448,7 @@ export async function demoteUser(userId: number): Promise<void> {
     if (!user || !user.active || user.type !== "MANAGER") {
         await accountLogger.debug(session, "User demotion skipped", {
             targetUserId: userId,
-            reason: "target_not_active_manager"
+            reason: "target_not_active_manager",
         });
 
         return;

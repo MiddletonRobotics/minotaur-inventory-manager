@@ -71,7 +71,7 @@ export async function createVendor(_previousState: VendorActionState, formData: 
 
                 vendorLogger.completed(session, "Vendor reactivation", {
                     vendorId: existing.id,
-                    vendorName: existing.name
+                    vendorName: existing.name,
                 });
             });
 
@@ -98,7 +98,7 @@ export async function createVendor(_previousState: VendorActionState, formData: 
 
         vendorLogger.completed(session, "Vendor creation", {
             vendorId: vendor.id,
-            vendorName: vendor.name
+            vendorName: vendor.name,
         });
     });
 
@@ -118,7 +118,7 @@ export async function deactivateVendor(vendorId: number, _previousState: VendorA
 
     if (!vendor) {
         vendorLogger.rejected(session, "Vendor deactivation", "vendor_does_not_exist", {
-            targetUserId: performedById
+            targetUserId: performedById,
         });
 
         return { error: "Vendor does not exist." };
@@ -127,7 +127,7 @@ export async function deactivateVendor(vendorId: number, _previousState: VendorA
     if (!vendor.active) {
         vendorLogger.debug(session, "Vendor deactivation", {
             vendorId: vendor.id,
-            vendorName: vendor.name
+            vendorName: vendor.name,
         });
 
         return { success: "Vendor is already inactive." };
@@ -151,7 +151,7 @@ export async function deactivateVendor(vendorId: number, _previousState: VendorA
 
     vendorLogger.completed(session, "Vendor deactivation", {
         vendorId: vendor.id,
-        vendorName: vendor.name
+        vendorName: vendor.name,
     });
 
     revalidateVendors();

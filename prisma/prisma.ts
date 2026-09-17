@@ -12,14 +12,16 @@ function createPrismaClient(): PrismaClient {
     const adapter = new PrismaPg({ connectionString });
     const client = new PrismaClient({
         adapter,
-        log: [{
-            emit: "event",
-            level: "warn",
-        },
-        {
-            emit: "event",
-            level: "error",
-        }],
+        log: [
+            {
+                emit: "event",
+                level: "warn",
+            },
+            {
+                emit: "event",
+                level: "error",
+            },
+        ],
     });
 
     client.$on("warn", (event) => {
@@ -39,7 +41,7 @@ function createPrismaClient(): PrismaClient {
     return client;
 }
 
-const globalForPrisma = globalThis as unknown as { prisma: | PrismaClient | undefined };
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined };
 const prisma = globalForPrisma.prisma ?? createPrismaClient();
 
 if (process.env.NODE_ENV !== "production") {

@@ -71,7 +71,7 @@ export async function createCategory(_previousState: CategoryActionState, formDa
     if (existingCategory) {
         categoryLogger.rejected(session, "Category creation", "category_name_not_unique", {
             categoryId: existingCategory.id,
-            categoryName: existingCategory.name
+            categoryName: existingCategory.name,
         });
 
         return { error: "A category with that name already exists." };
@@ -85,7 +85,7 @@ export async function createCategory(_previousState: CategoryActionState, formDa
 
         if (!Number.isInteger(parsedParentId)) {
             categoryLogger.rejected(session, "Category creation", "category_name_not_unique", {
-                targetCategoryId: parsedParentId
+                targetCategoryId: parsedParentId,
             });
 
             return { error: "Invalid parent category." };
@@ -102,7 +102,7 @@ export async function createCategory(_previousState: CategoryActionState, formDa
 
         if (!parent) {
             categoryLogger.rejected(session, "Category creation", "category_does_not_exist", {
-                targetUserId: session.user.id
+                targetUserId: session.user.id,
             });
 
             return { error: "Parent category does not exist." };
@@ -137,7 +137,7 @@ export async function createCategory(_previousState: CategoryActionState, formDa
             entityName: category.name,
             summary: isSubcategory ? `Created subcategory "${category.name}" under "${parentName}".` : `Created category "${category.name}".`,
             performedById: Number(session.user.id),
-            details: isSubcategory ? { parentId: resolvedParentId!,  parentName: parentName! } : { level: "CATEGORY" },
+            details: isSubcategory ? { parentId: resolvedParentId!, parentName: parentName! } : { level: "CATEGORY" },
         });
 
         categoryLogger.completed(session, "Category creation", {
@@ -233,7 +233,7 @@ export async function relocateSubcategory(subcategoryId: number, _previousState:
             subcategoryId,
         });
 
-        return { error:"Select a valid parent category." };
+        return { error: "Select a valid parent category." };
     }
 
     const [subcategory, newParent] = await Promise.all([
@@ -311,7 +311,7 @@ export async function moveAllItems(sourceSubcategoryId: number, _previousState: 
     if (!Number.isInteger(targetSubcategoryId)) {
         await categoryLogger.rejected(session, "Bulk part move", "invalid_destination", {
             sourceSubcategoryId,
-        }); 
+        });
 
         return { error: "Select a valid destination subcategory" };
     }

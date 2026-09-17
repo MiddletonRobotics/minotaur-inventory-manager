@@ -92,7 +92,7 @@ export async function proxy(request: NextRequest) {
 
         await httpLog.debug("Authenticated login request redirected", requestMetadata);
 
-        const response = NextResponse.redirect(url,);
+        const response = NextResponse.redirect(url);
         response.headers.set("x-request-id", requestId);
 
         return response;

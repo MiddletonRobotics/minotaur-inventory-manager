@@ -55,7 +55,7 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
 
 export async function logout(): Promise<never> {
     const session = await authenticate();
-    
+
     await deleteSession();
     await authLog.info("Logout", { userId: session ? Number(session.user.id) : null });
 
