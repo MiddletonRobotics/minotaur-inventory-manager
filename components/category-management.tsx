@@ -33,19 +33,20 @@ export function CreateCategoryForm({ parentCategories }: CreateCategoryFormProps
 
                 const formData = new FormData(event.currentTarget);
                 startTransition(async () => {
-                        const result = await createCategory(undefined, formData);
+                    const result = await createCategory(undefined, formData);
 
-                        setState(result);
-                        if (result?.error) return;
-                
-                        setLevel("CATEGORY");
-                        formRef.current?.reset();
-                    },
-                );
+                    setState(result);
+                    if (result?.error) return;
+
+                    setLevel("CATEGORY");
+                    formRef.current?.reset();
+                });
             }}
         >
             <div className="space-y-2">
-                <label htmlFor="name" className="block text-sm font-medium text-fg">Name</label>
+                <label htmlFor="name" className="block text-sm font-medium text-fg">
+                    Name
+                </label>
                 <input
                     id="name"
                     name="name"
@@ -57,13 +58,15 @@ export function CreateCategoryForm({ parentCategories }: CreateCategoryFormProps
             </div>
 
             <div className="space-y-2">
-                <label htmlFor="level" className="block text-sm font-medium text-fg">Type</label>
+                <label htmlFor="level" className="block text-sm font-medium text-fg">
+                    Type
+                </label>
                 <select
                     id="level"
                     name="level"
                     value={level}
                     onChange={(event) => {
-                        setLevel(event.currentTarget.value as | "CATEGORY" | "SUBCATEGORY");
+                        setLevel(event.currentTarget.value as "CATEGORY" | "SUBCATEGORY");
                         setState(undefined);
                     }}
                     className="w-full rounded-md border bg-input px-3 py-2.5 text-sm text-fg outline-none focus:border-border-focus"
@@ -75,11 +78,17 @@ export function CreateCategoryForm({ parentCategories }: CreateCategoryFormProps
 
             {level === "SUBCATEGORY" && (
                 <div className="space-y-2">
-                    <label htmlFor="parentId" className="block text-sm font-medium text-fg">Parent Category</label>
+                    <label htmlFor="parentId" className="block text-sm font-medium text-fg">
+                        Parent Category
+                    </label>
                     <select id="parentId" name="parentId" required defaultValue="" className="w-full rounded-md border bg-input px-3 py-2.5 text-sm text-fg outline-none focus:border-border-focus">
-                        <option value="" disabled>Select a category</option>
+                        <option value="" disabled>
+                            Select a category
+                        </option>
                         {parentCategories.map((category) => (
-                            <option key={category.id} value={category.id}>{category.name}</option>
+                            <option key={category.id} value={category.id}>
+                                {category.name}
+                            </option>
                         ))}
                     </select>
 
@@ -88,12 +97,12 @@ export function CreateCategoryForm({ parentCategories }: CreateCategoryFormProps
             )}
 
             {state?.error && (
-                <p role="alert" className="text-sm text-accent">{state.error}</p>
+                <p role="alert" className="text-sm text-accent">
+                    {state.error}
+                </p>
             )}
 
-            {state?.success && (
-                <p className="text-sm text-fg-muted">{state.success}</p>
-            )}
+            {state?.success && <p className="text-sm text-fg-muted">{state.success}</p>}
 
             <button type="submit" disabled={pending} className="rounded-md bg-accent px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60">
                 {pending ? "Creating..." : "Create Category"}
