@@ -44,7 +44,7 @@
         "prisma": "7.9.1",
         "tailwindcss": "^4",
         "vite-tsconfig-paths": "^6.1.1",
-        "vitest": "^4.1.11"
+        "vitest": "^5.0.1"
     },
     "allowScripts": {
         "unrs-resolver@1.12.2": true,
