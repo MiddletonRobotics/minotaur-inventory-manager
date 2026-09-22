@@ -9,6 +9,11 @@ const eslintConfig = [
     {
         ignores: [".next/**", "out/**", "build/**", "next-env.d.ts", "prisma/generated/**"],
     },
+    {
+        settings: {
+            react: { version: '19' }
+        }
+    }
 ];
 
 export default eslintConfig;
