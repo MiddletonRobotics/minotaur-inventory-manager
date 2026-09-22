@@ -29,3 +29,7 @@
     background-color: var(--color-accent);
     padding: 20px;
 }
+
+.category-card:hover {
+    background-color: var(--color-accent-hover);
+}
