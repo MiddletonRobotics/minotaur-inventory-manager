@@ -11,9 +11,9 @@ const eslintConfig = [
     },
     {
         settings: {
-            react: { version: '19' }
-        }
-    }
+            react: { version: "19" },
+        },
+    },
 ];
 
 export default eslintConfig;
