@@ -92,6 +92,10 @@
     background-color: var(--color-accent-hover);
 }
 
+.project-card:hover {
+    background-color: var(--color-accent-hover);
+}
+
 @media (min-width: 640px) {
     .projects-page {
         padding-inline: 2rem;

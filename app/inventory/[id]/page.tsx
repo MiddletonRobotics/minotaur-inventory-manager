@@ -92,9 +92,13 @@ export default async function InventoryCategoryPage({ params }: InventoryCategor
                     <h1 className="mb-10 text-center text-4xl font-black uppercase tracking-widest text-fg">{category.name}</h1>
 
                     {category.children.length > 0 ? (
-                        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                        <div className="flex flex-wrap justify-center gap-5">
                             {category.children.map((child) => (
-                                <Link key={child.id} href={`/inventory/${child.id}`} className="group flex min-h-36 flex-col justify-between bg-accent p-5 text-fg transition-colors hover:bg-accent-hover">
+                                <Link
+                                    key={child.id}
+                                    href={`/inventory/${child.id}`}
+                                    className="group flex min-h-36 w-full flex-col justify-between bg-accent p-5 text-fg transition-colors hover:bg-accent-hover sm:w-[calc((100%-1.25rem)/2)] lg:w-[calc((100%-2.5rem)/3)]"
+                                >
                                     <div>
                                         <h3 className="text-lg font-semibold uppercase tracking-wide">{child.name}</h3>
                                         <p className="mt-2 text-xs text-fg/70">{child._count.children > 0 ? `${child._count.children} subcategories` : `${child._count.items} parts`}</p>

@@ -20,8 +20,16 @@
     text-transform: uppercase;
 }
 
+.inventory-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+}
+
 .category-card {
     display: flex;
+    width: 100%;
     min-height: calc(var(--spacing) * 36);
     flex-direction: column;
     justify-content: space-between;
@@ -32,4 +40,16 @@
 
 .category-card:hover {
     background-color: var(--color-accent-hover);
+}
+
+@media (min-width: 640px) {
+    .category-card {
+        width: calc((100% - 1rem) / 2);
+    }
+}
+
+@media (min-width: 1024px) {
+    .category-card {
+        width: calc((100% - 2rem) / 3);
+    }
 }
