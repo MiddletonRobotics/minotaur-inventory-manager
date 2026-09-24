@@ -60,9 +60,9 @@ export default async function Navbar() {
 
                 <div className="lg:hidden">
                     <input id="mobile-navigation-toggle" type="checkbox" className="peer sr-only" />
-                    <label 
-                        htmlFor="mobile-navigation-toggle" 
-                        aria-label="Open navigation menu" 
+                    <label
+                        htmlFor="mobile-navigation-toggle"
+                        aria-label="Open navigation menu"
                         className="relative z-[70] flex cursor-pointer items-center justify-center rounded-md p-2 text-fg-muted transition-colors hover:bg-input hover:text-fg peer-checked:hidden"
                     >
                         <Menu size={28} />
@@ -85,7 +85,11 @@ export default async function Navbar() {
                     <aside className="fixed right-0 top-20 z-50 w-[min(70vw,16rem)] max-h-[calc(100vh-5rem)] translate-x-full overflow-y-auto rounded-bl-lg border-b border-l border-border bg-bg shadow-2xl transition-transform duration-200 ease-out peer-checked:translate-x-0">
                         <nav className="flex flex-col px-4 py-3">
                             {navigationElements.map((link) => (
-                                <Link key={link.href} href={link.href} className="border-b border-border px-2 py-3.5 text-center font-dmsans text-base font-medium text-fg-muted transition-colors last:border-b-0 hover:bg-input hover:text-fg">
+                                <Link
+                                    key={link.href}
+                                    href={link.href}
+                                    className="border-b border-border px-2 py-3.5 text-center font-dmsans text-base font-medium text-fg-muted transition-colors last:border-b-0 hover:bg-input hover:text-fg"
+                                >
                                     {link.label}
                                 </Link>
                             ))}
