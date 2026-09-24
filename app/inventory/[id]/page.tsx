@@ -94,9 +94,9 @@ export default async function InventoryCategoryPage({ params }: InventoryCategor
                     {category.children.length > 0 ? (
                         <div className="flex flex-wrap justify-center gap-5">
                             {category.children.map((child) => (
-                                <Link 
-                                    key={child.id} 
-                                    href={`/inventory/${child.id}`} 
+                                <Link
+                                    key={child.id}
+                                    href={`/inventory/${child.id}`}
                                     className="group flex min-h-36 w-full flex-col justify-between bg-accent p-5 text-fg transition-colors hover:bg-accent-hover sm:w-[calc((100%-1.25rem)/2)] lg:w-[calc((100%-2.5rem)/3)]"
                                 >
                                     <div>

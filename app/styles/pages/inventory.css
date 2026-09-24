@@ -44,16 +44,12 @@
 
 @media (min-width: 640px) {
     .category-card {
-        width: calc(
-            (100% - 1rem) / 2
-        );
+        width: calc((100% - 1rem) / 2);
     }
 }
 
 @media (min-width: 1024px) {
     .category-card {
-        width: calc(
-            (100% - 2rem) / 3
-        );
+        width: calc((100% - 2rem) / 3);
     }
 }
