@@ -5,6 +5,7 @@ import { createUser, deactivateUser, reactivateUser, promoteUser, demoteUser, ty
 
 import ActionMenu, { actionMenuItemCSS, dangerousActionMenuItemCSS } from "@/components/ui/action-menu";
 import Window from "@/components/ui/window";
+import { changeTeamPassword, PasswordActionState } from "@/server/passwords";
 
 type DeleteUserButtonProps = { userId: number; userName: string };
 type DeactivatedUserActionsMenuProps = { userId: number; userName: string; userRole: "STANDARD" | "MANAGER" | "ADMINISTRATOR" };
@@ -86,10 +87,126 @@ export function CreateUserForm() {
             {state?.error ? <p className="text-sm text-accent">{state.error}</p> : null}
             {state?.success ? <p className="text-sm text-fg-muted">{state.success}</p> : null}
 
-            <button type="submit" disabled={pending} className="rounded-md bg-accent px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60">
-                {pending ? "Creating..." : "Create User"}
-            </button>
+            <div className="flex flex-wrap items-center gap-3">
+                <button
+                    type="submit"
+                    disabled={pending}
+                    className="rounded-md bg-accent px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                    {pending ? "Creating..." : "Create User"}
+                </button>
+                <TeamPasswordManagement />
+            </div>
         </form>
+    );
+}
+
+export function TeamPasswordManagement() {
+    const [open, setOpen] = useState(false);
+    const [state, setState] = useState<PasswordActionState>(undefined);
+    const [pending, startTransition] = useTransition();
+
+    function openWindow() {
+        setState(undefined);
+        setOpen(true);
+    }
+
+    function closeWindow() {
+        if (pending) return;
+
+        setState(undefined);
+        setOpen(false);
+    }
+
+    return (
+        <>
+            <button
+                type="button"
+                onClick={openWindow}
+                className="rounded-md border border-border px-5 py-2.5 text-sm font-medium text-fg-muted transition-colors hover:border-border-focus hover:text-fg"
+            >
+                Change Team Password
+            </button>
+
+            <Window open={open} onClose={closeWindow} title="Change Team Password" description="This changes the shared password used by every Standard account.">
+                <form
+                    onSubmit={(event) => {
+                        event.preventDefault();
+
+                        const form = event.currentTarget;
+                        const formData = new FormData(form);
+
+                        startTransition(async () => {
+                            const result = await changeTeamPassword(undefined, formData);
+
+                            if (result?.error) {
+                                setState(result);
+                                return;
+                            }
+
+                            form.reset();
+                            setState(undefined);
+                            setOpen(false);
+                        });
+                    }}
+                    className="space-y-4"
+                >
+                    <div className="space-y-2">
+                        <label htmlFor="new-team-password" className="block text-sm font-medium text-fg">New Team Password</label>
+                        <input
+                            id="new-team-password"
+                            name="newPassword"
+                            type="password"
+                            required
+                            minLength={8}
+                            maxLength={100}
+                            autoComplete="new-password"
+                            placeholder="Enter a new team password"
+                            className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm text-fg outline-none placeholder:text-fg-dim focus:border-border-focus"
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <label htmlFor="confirm-team-password" className="block text-sm font-medium text-fg">Confirm Team Password</label>
+                        <input
+                            id="confirm-team-password"
+                            name="confirmPassword"
+                            type="password"
+                            required
+                            minLength={8}
+                            maxLength={100}
+                            autoComplete="new-password"
+                            placeholder="Re-enter the new password"
+                            className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm text-fg outline-none placeholder:text-fg-dim focus:border-border-focus"
+                        />
+                    </div>
+
+                    {state?.error && (
+                        <p role="alert" className="text-sm text-accent">{state.error}</p>
+                    )}
+
+                    <p className="text-xs text-fg-muted">The team password cannot match a Manager or Administrator password.</p>
+                    <div className="flex justify-end gap-2">
+                        <button
+                            type="button"
+                            onClick={closeWindow}
+                            disabled={pending}
+                            className="rounded-md border border-border px-4 py-2 text-sm text-fg-muted transition-colors hover:text-fg disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                            Cancel
+                        </button>
+
+                        <button
+                            type="submit"
+                            disabled={pending}
+                            className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                            {pending ? "Changing..." : "Change Password"}
+                        </button>
+                    </div>
+                </form>
+            </Window>
+        </>
     );
 }
 
