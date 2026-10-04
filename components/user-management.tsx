@@ -1,13 +1,13 @@
 "use client";
 
 import { useActionState, useTransition, useState } from "react";
-import { createUser, deactivateUser, reactivateUser, promoteUser, demoteUser, type CreateUserState, type ReactivateUserState, type PromoteUserState } from "@/server/users";
+import { createUser, deactivateUser, reactivateUser, promoteUser, demoteUser, type CreateUserState, type PromoteUserState } from "@/server/users";
 
 import ActionMenu, { actionMenuItemCSS, dangerousActionMenuItemCSS } from "@/components/ui/action-menu";
 import Window from "@/components/ui/window";
 
 type DeleteUserButtonProps = { userId: number; userName: string };
-type ReactivateUserControlProps = { userId: number; userName: string; userRole: "STANDARD" | "MANAGER" | "ADMINISTRATOR" };
+type DeactivatedUserActionsMenuProps = { userId: number; userName: string; userRole: "STANDARD" | "MANAGER" | "ADMINISTRATOR"; };
 type PromoteUserControlProps = { userId: number };
 type DemoteUserButtonProps = { userId: number; userName: string };
 type UserActionsMenuProps = { userId: number; userName: string; userRole: "STANDARD" | "MANAGER" | "ADMINISTRATOR" };
@@ -112,40 +112,93 @@ export function DeactivateUserButton({ userId, userName }: DeleteUserButtonProps
     );
 }
 
-export function ReactivateUserControl({ userId, userRole }: ReactivateUserControlProps) {
-    const reactivateAction = reactivateUser.bind(null, userId);
-    const [state, formAction, pending] = useActionState<ReactivateUserState, FormData>(reactivateAction, undefined);
+export function DeactivatedUserActionsMenu({ userId, userName, userRole }: DeactivatedUserActionsMenuProps) {
+    const [reactivateOpen, setReactivateOpen] = useState(false);
+    const [reactivateError, setReactivateError] = useState<string | null>(null);
+    const [reactivating, startReactivating] = useTransition();
 
-    if (userRole === "ADMINISTRATOR") {
-        return null;
+    if (userRole === "ADMINISTRATOR") return null;
+
+    function openReactivateWindow() {
+        setReactivateError(null);
+        setReactivateOpen(true);
     }
 
     return (
-        <form action={formAction} className="flex flex-col items-end gap-2">
-            {userRole === "MANAGER" && (
-                <input
-                    name="password"
-                    type="password"
-                    required
-                    minLength={8}
-                    autoComplete="new-password"
-                    placeholder="New manager password"
-                    className="w-56 rounded-md border bg-input px-3 py-2 text-sm outline-none transition-colors placeholder:text-fg-dim focus:border-border-focus"
-                />
-            )}
+        <>
+            <ActionMenu>
+                <button type="button" onClick={openReactivateWindow} className={actionMenuItemCSS}>Reactivate</button>
+            </ActionMenu>
 
-            <button
-                type="submit"
-                disabled={pending}
-                className="rounded-md border border-green-600/50 px-3 py-1.5 text-sm text-green-600 transition-colors hover:border-green-500 hover:bg-green-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+            <Window
+                open={reactivateOpen}
+                onClose={() => setReactivateOpen(false)}
+                title="Reactivate User"
+                description={
+                    userRole === "MANAGER" ? `Set a new unique Manager password for ${userName}.` : `Reactivate ${userName}. Their password will be reset to the shared team password.`
+                }
             >
-                {pending ? "Reactivating..." : "Reactivate"}
-            </button>
+                <form
+                    onSubmit={(event) => {
+                        event.preventDefault();
+                        const formData = new FormData(event.currentTarget);
 
-            {state?.error && <p className="max-w-64 text-right text-xs text-accent">{state.error}</p>}
+                        startReactivating(async () => {
+                            const result = await reactivateUser(userId, undefined, formData);
 
-            {state?.success && <p className="max-w-64 text-right text-xs text-fg-muted">{state.success}</p>}
-        </form>
+                            if (result?.error) {
+                                setReactivateError(result.error);
+                                return;
+                            }
+
+                            setReactivateError(null);
+                            setReactivateOpen(false);
+                        });
+                    }}
+                    className="space-y-4"
+                >
+                    {userRole === "MANAGER" && (
+                        <div className="space-y-2">
+                            <label htmlFor={`reactivate-password-${userId}`} className="block text-sm font-medium text-fg">Manager Password</label>
+                            <input
+                                id={`reactivate-password-${userId}`}
+                                name="password"
+                                type="password"
+                                required
+                                minLength={8}
+                                maxLength={100}
+                                autoComplete="new-password"
+                                placeholder="Enter a unique password"
+                                className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm text-fg outline-none placeholder:text-fg-dim focus:border-border-focus"
+                            />
+
+                            <p className="text-xs text-fg-muted">The password must be unique and cannot be the shared team password.</p>
+                        </div>
+                    )}
+
+                    {reactivateError && <p className="text-sm text-accent">{reactivateError}</p>}
+
+                    <div className="flex justify-end gap-2">
+                        <button
+                            type="button"
+                            onClick={() => setReactivateOpen(false)}
+                            disabled={reactivating}
+                            className="rounded-md border border-border px-4 py-2 text-sm text-fg-muted transition-colors hover:text-fg disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                            Cancel
+                        </button>
+
+                        <button
+                            type="submit"
+                            disabled={reactivating}
+                            className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                            {reactivating ? "Reactivating..." : "Reactivate"}
+                        </button>
+                    </div>
+                </form>
+            </Window>
+        </>
     );
 }
 
@@ -175,7 +228,6 @@ export function PromoteUserControl({ userId }: PromoteUserControlProps) {
             </button>
 
             {state?.error && <p className="max-w-64 text-right text-xs text-accent">{state.error}</p>}
-
             {state?.success && <p className="max-w-64 text-right text-xs text-fg-muted">{state.success}</p>}
         </form>
     );
