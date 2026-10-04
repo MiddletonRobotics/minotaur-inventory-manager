@@ -1,37 +1,16 @@
 "use server";
 
-import "dotenv/config";
-import { compare, hash } from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { writeAuditLog } from "./audit";
-import { createActionLogger } from "@/server/action-logger";
-import { authenticate, Session } from "@/server/session";
+
 import prisma from "@/prisma/prisma";
-
-/**
- * Super jank solution but it works to get an env field as only a string instead of string | undefined
- * @param name Name of the field in the .env file
- * @returns
- */
-
-function getRequiredEnv(name: string): string {
-    const value = process.env[name];
-
-    if (!value) {
-        throw new Error(`${name} is required`);
-    }
-
-    return value;
-}
+import { createActionLogger } from "@/server/action-logger";
+import { writeAuditLog } from "@/server/audit";
+import { getTeamPasswordHash, hashPassword, isPrivilegedPasswordInUse, isTeamPassword } from "@/server/passwords";
+import { authenticate, type Session } from "@/server/session";
 
 const accountLogger = createActionLogger("accounts");
-const standardUserPassword = getRequiredEnv("TEAM_PASSWORD");
-
-if (!standardUserPassword) {
-    throw new Error("A team password is required");
-}
 
 const CreateUserSchema = z
     .object({
@@ -54,16 +33,11 @@ export type CreateUserState = { error?: string; success?: string } | undefined;
 export type ReactivateUserState = { error?: string; success?: string } | undefined;
 export type PromoteUserState = { error?: string; success?: string } | undefined;
 
-async function requireAdministrator() {
+export async function requireAdministrator(): Promise<Session> {
     const session = await authenticate();
 
-    if (!session) {
-        redirect("/login");
-    }
-
-    if (session.user.role !== "ADMINISTRATOR") {
-        redirect("/");
-    }
+    if (!session) redirect("/login");
+    if (session.user.role !== "ADMINISTRATOR") redirect("/");
 
     return session;
 }
@@ -74,9 +48,8 @@ function revalidateAccounts() {
 }
 
 export async function createUser(_previousState: CreateUserState, formData: FormData): Promise<CreateUserState> {
-    const session: Session = await requireAdministrator();
+    const session = await requireAdministrator();
     const performedById = Number(session.user.id);
-
     const parsed = CreateUserSchema.safeParse({
         firstName: formData.get("firstName"),
         lastName: formData.get("lastName"),
@@ -85,41 +58,11 @@ export async function createUser(_previousState: CreateUserState, formData: Form
     });
 
     if (!parsed.success) {
-        return {
-            error: parsed.error.issues[0]?.message ?? "Invalid user information.",
-        };
+        await accountLogger.rejected(session, "User creation", "invalid_form_data");
+        return { error: parsed.error.issues[0]?.message ?? "Invalid user information." };
     }
 
     const { firstName, lastName, role, password } = parsed.data;
-
-    if (role === "MANAGER" && password === standardUserPassword) {
-        return {
-            error: "Managers cannot use the standard team password.",
-        };
-    }
-
-    if (role === "MANAGER") {
-        const privilegedUsers = await prisma.user.findMany({
-            where: {
-                type: { in: ["MANAGER", "ADMINISTRATOR"] },
-                active: true,
-            },
-            select: { pwdHash: true },
-        });
-
-        for (const user of privilegedUsers) {
-            if (await compare(password, user.pwdHash)) {
-                await accountLogger.rejected(session, "User creation", "manager_used_team_password", {
-                    requestedRole: role,
-                });
-
-                return { error: "Manager passwords must be unique." };
-            }
-        }
-    }
-
-    const passwordToHash = role === "STANDARD" ? standardUserPassword : password;
-    const pwdHash = await hash(passwordToHash, 12);
     const existingUser = await prisma.user.findUnique({
         where: {
             firstName_lastName: { firstName, lastName },
@@ -135,6 +78,24 @@ export async function createUser(_previousState: CreateUserState, formData: Form
         return { error: existingUser.active ? "A user with that name already exists." : "A deactivated user with that name already exists. Reactivate that account instead." };
     }
 
+    if (role === "MANAGER" && (await isTeamPassword(password))) {
+        await accountLogger.rejected(session, "User creation", "manager_used_team_password", {
+            requestedRole: role,
+        });
+
+        return { error: "Managers cannot use the shared team password." };
+    }
+
+    if (role === "MANAGER" && (await isPrivilegedPasswordInUse(password))) {
+        await accountLogger.rejected(session, "User creation", "privileged_password_not_unique", {
+            requestedRole: role,
+        });
+
+        return { error: "Manager passwords must be unique." };
+    }
+
+    const pwdHash = role === "STANDARD" ? await getTeamPasswordHash() : await hashPassword(password);
+
     await prisma.$transaction(async (tx) => {
         const user = await tx.user.create({
             data: {
@@ -146,7 +107,6 @@ export async function createUser(_previousState: CreateUserState, formData: Form
         });
 
         const roleName = role === "MANAGER" ? "Manager" : "Standard";
-
         await writeAuditLog(tx, {
             action: "USER_CREATED",
             entityId: user.id,
@@ -168,9 +128,8 @@ export async function createUser(_previousState: CreateUserState, formData: Form
 }
 
 export async function deactivateUser(userId: number): Promise<void> {
-    const session: Session = await requireAdministrator();
+    const session = await requireAdministrator();
     const performedById = Number(session.user.id);
-
     const user = await prisma.user.findUnique({
         where: { id: userId },
         select: {
@@ -182,7 +141,21 @@ export async function deactivateUser(userId: number): Promise<void> {
         },
     });
 
-    if (!user || !user.active) {
+    if (!user) {
+        await accountLogger.debug(session, "User deactivation skipped", {
+            targetUserId: userId,
+            reason: "user_not_found",
+        });
+
+        return;
+    }
+
+    if (!user.active) {
+        await accountLogger.debug(session, "User deactivation skipped", {
+            targetUserId: user.id,
+            reason: "user_already_inactive",
+        });
+
         return;
     }
 
@@ -219,9 +192,8 @@ export async function deactivateUser(userId: number): Promise<void> {
 }
 
 export async function reactivateUser(userId: number, _previousState: ReactivateUserState, formData: FormData): Promise<ReactivateUserState> {
-    const session: Session = await requireAdministrator();
+    const session = await requireAdministrator();
     const performedById = Number(session.user.id);
-
     const user = await prisma.user.findUnique({
         where: { id: userId },
         select: {
@@ -234,6 +206,10 @@ export async function reactivateUser(userId: number, _previousState: ReactivateU
     });
 
     if (!user) {
+        await accountLogger.rejected(session, "User reactivation", "user_not_found", {
+            targetUserId: userId,
+        });
+
         return { error: "User does not exist." };
     }
 
@@ -253,61 +229,44 @@ export async function reactivateUser(userId: number, _previousState: ReactivateU
         return { error: "Administrator accounts cannot be reactivated here." };
     }
 
-    let passwordToHash: string;
+    let pwdHash: string;
 
     if (user.type === "STANDARD") {
-        passwordToHash = standardUserPassword;
+        pwdHash = await getTeamPasswordHash();
     } else {
         const password = formData.get("password");
 
-        if (typeof password !== "string" || password.length < 8) {
+        if (typeof password !== "string" || password.length < 8 || password.length > 100) {
             await accountLogger.rejected(session, "User reactivation", "manager_password_invalid_length", {
                 targetUserId: user.id,
             });
 
-            return { error: "Managers must have a password of at least 8 characters." };
+            return { error: "Managers must have a password between 8 and 100 characters." };
         }
 
-        if (password === standardUserPassword) {
+        if (await isTeamPassword(password)) {
             await accountLogger.rejected(session, "User reactivation", "manager_used_team_password", {
                 targetUserId: user.id,
             });
 
-            return { error: "Managers cannot use the standard team password." };
+            return { error: "Managers cannot use the shared team password." };
         }
 
-        const privilegedUsers = await prisma.user.findMany({
-            where: {
-                active: true,
-                type: { in: ["MANAGER", "ADMINISTRATOR"] },
-            },
-            select: { pwdHash: true },
-        });
+        if (await isPrivilegedPasswordInUse(password, user.id)) {
+            await accountLogger.rejected(session, "User reactivation", "privileged_password_not_unique", {
+                targetUserId: user.id,
+            });
 
-        for (const privilegedUser of privilegedUsers) {
-            const passwordAlreadyUsed = await compare(password, privilegedUser.pwdHash);
-
-            if (passwordAlreadyUsed) {
-                await accountLogger.rejected(session, "User reactivation", "privileged_password_not_unique", {
-                    targetUserId: user.id,
-                });
-
-                return { error: "Manager passwords must be unique." };
-            }
+            return { error: "Manager passwords must be unique." };
         }
 
-        passwordToHash = password;
+        pwdHash = await hashPassword(password);
     }
-
-    const pwdHash = await hash(passwordToHash, 12);
 
     await prisma.$transaction(async (tx) => {
         await tx.user.update({
             where: { id: user.id },
-            data: {
-                active: true,
-                pwdHash,
-            },
+            data: { active: true, pwdHash },
         });
 
         await writeAuditLog(tx, {
@@ -331,9 +290,8 @@ export async function reactivateUser(userId: number, _previousState: ReactivateU
 }
 
 export async function promoteUser(userId: number, _previousState: PromoteUserState, formData: FormData): Promise<PromoteUserState> {
-    const session: Session = await requireAdministrator();
+    const session = await requireAdministrator();
     const performedById = Number(session.user.id);
-
     const user = await prisma.user.findUnique({
         where: { id: userId },
         select: {
@@ -372,31 +330,30 @@ export async function promoteUser(userId: number, _previousState: PromoteUserSta
     const password = formData.get("password");
 
     if (typeof password !== "string" || password.length < 8 || password.length > 100) {
-        accountLogger.rejected(session, "User promotion", "manager_password_invalid", {
+        await accountLogger.rejected(session, "User promotion", "manager_password_invalid", {
             targetUserId: user.id,
         });
 
         return { error: "Managers must have a password between 8 and 100 characters." };
     }
 
-    if (password === standardUserPassword) {
-        accountLogger.rejected(session, "User promotion", "manager_used_team_password", {
+    if (await isTeamPassword(password)) {
+        await accountLogger.rejected(session, "User promotion", "manager_used_team_password", {
             targetUserId: user.id,
         });
 
-        return { error: "Managers cannot use the standard team password." };
+        return { error: "Managers cannot use the shared team password." };
     }
 
-    if (await isPrivilegedPasswordInUse(password)) {
-        accountLogger.rejected(session, "User promotion", "privileged_password_not_unique", {
+    if (await isPrivilegedPasswordInUse(password, user.id)) {
+        await accountLogger.rejected(session, "User promotion", "privileged_password_not_unique", {
             targetUserId: user.id,
         });
 
         return { error: "Manager passwords must be unique." };
     }
 
-    const pwdHash = await hash(password, 12);
-
+    const pwdHash = await hashPassword(password);
     await prisma.$transaction(async (tx) => {
         await tx.user.update({
             where: { id: user.id },
@@ -431,9 +388,8 @@ export async function promoteUser(userId: number, _previousState: PromoteUserSta
 }
 
 export async function demoteUser(userId: number): Promise<void> {
-    const session: Session = await requireAdministrator();
+    const session = await requireAdministrator();
     const performedById = Number(session.user.id);
-
     const user = await prisma.user.findUnique({
         where: { id: userId },
         select: {
@@ -454,8 +410,7 @@ export async function demoteUser(userId: number): Promise<void> {
         return;
     }
 
-    const pwdHash = await hash(standardUserPassword, 12);
-
+    const pwdHash = await getTeamPasswordHash();
     await prisma.$transaction(async (tx) => {
         await tx.user.update({
             where: { id: user.id },
@@ -485,27 +440,4 @@ export async function demoteUser(userId: number): Promise<void> {
     });
 
     revalidateAccounts();
-}
-
-async function isPrivilegedPasswordInUse(password: string, excludedUserId?: number): Promise<boolean> {
-    const privilegedUsers = await prisma.user.findMany({
-        where: {
-            active: true,
-            type: { in: ["MANAGER", "ADMINISTRATOR"] },
-            ...(excludedUserId === undefined
-                ? {}
-                : {
-                      id: { not: excludedUserId },
-                  }),
-        },
-        select: { pwdHash: true },
-    });
-
-    for (const user of privilegedUsers) {
-        if (await compare(password, user.pwdHash)) {
-            return true;
-        }
-    }
-
-    return false;
 }

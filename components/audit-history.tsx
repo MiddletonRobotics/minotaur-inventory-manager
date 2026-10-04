@@ -26,7 +26,8 @@ export type AuditAction =
     | "USER_DEACTIVATED"
     | "USER_REACTIVATED"
     | "USER_PROMOTED"
-    | "USER_DEMOTED";
+    | "USER_DEMOTED"
+    | "TEAM_PASSWORD_CHANGED";
 
 type AuditUser = {
     firstName: string;
@@ -92,6 +93,7 @@ const actionLabels: Record<AuditAction, string> = {
     USER_REACTIVATED: "User Reactivated",
     USER_PROMOTED: "User Promoted",
     USER_DEMOTED: "User Demoted",
+    TEAM_PASSWORD_CHANGED: "Team Password Changed",
 };
 
 const actionGroups: Record<AuditAction, Exclude<AuditGroup, "ALL">> = {
@@ -115,6 +117,7 @@ const actionGroups: Record<AuditAction, Exclude<AuditGroup, "ALL">> = {
     USER_REACTIVATED: "ACCOUNTS",
     USER_PROMOTED: "ACCOUNTS",
     USER_DEMOTED: "ACCOUNTS",
+    TEAM_PASSWORD_CHANGED: "ACCOUNTS",
 };
 
 const groupOptions: readonly SelectDropdownOption<AuditGroup>[] = [
