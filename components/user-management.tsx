@@ -88,11 +88,7 @@ export function CreateUserForm() {
             {state?.success ? <p className="text-sm text-fg-muted">{state.success}</p> : null}
 
             <div className="flex flex-wrap items-center gap-3">
-                <button
-                    type="submit"
-                    disabled={pending}
-                    className="rounded-md bg-accent px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
-                >
+                <button type="submit" disabled={pending} className="rounded-md bg-accent px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60">
                     {pending ? "Creating..." : "Create User"}
                 </button>
                 <TeamPasswordManagement />
@@ -120,11 +116,7 @@ export function TeamPasswordManagement() {
 
     return (
         <>
-            <button
-                type="button"
-                onClick={openWindow}
-                className="rounded-md border border-border px-5 py-2.5 text-sm font-medium text-fg-muted transition-colors hover:border-border-focus hover:text-fg"
-            >
+            <button type="button" onClick={openWindow} className="rounded-md border border-border px-5 py-2.5 text-sm font-medium text-fg-muted transition-colors hover:border-border-focus hover:text-fg">
                 Change Team Password
             </button>
 
@@ -152,7 +144,9 @@ export function TeamPasswordManagement() {
                     className="space-y-4"
                 >
                     <div className="space-y-2">
-                        <label htmlFor="new-team-password" className="block text-sm font-medium text-fg">New Team Password</label>
+                        <label htmlFor="new-team-password" className="block text-sm font-medium text-fg">
+                            New Team Password
+                        </label>
                         <input
                             id="new-team-password"
                             name="newPassword"
@@ -167,7 +161,9 @@ export function TeamPasswordManagement() {
                     </div>
 
                     <div className="space-y-2">
-                        <label htmlFor="confirm-team-password" className="block text-sm font-medium text-fg">Confirm Team Password</label>
+                        <label htmlFor="confirm-team-password" className="block text-sm font-medium text-fg">
+                            Confirm Team Password
+                        </label>
                         <input
                             id="confirm-team-password"
                             name="confirmPassword"
@@ -182,7 +178,9 @@ export function TeamPasswordManagement() {
                     </div>
 
                     {state?.error && (
-                        <p role="alert" className="text-sm text-accent">{state.error}</p>
+                        <p role="alert" className="text-sm text-accent">
+                            {state.error}
+                        </p>
                     )}
 
                     <p className="text-xs text-fg-muted">The team password cannot match a Manager or Administrator password.</p>

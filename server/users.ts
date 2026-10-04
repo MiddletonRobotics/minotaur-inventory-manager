@@ -29,9 +29,9 @@ const CreateUserSchema = z
         }
     });
 
-export type CreateUserState = | { error?: string; success?: string; } | undefined;
-export type ReactivateUserState = | { error?: string; success?: string; } | undefined;
-export type PromoteUserState = | { error?: string; success?: string; } | undefined;
+export type CreateUserState = { error?: string; success?: string } | undefined;
+export type ReactivateUserState = { error?: string; success?: string } | undefined;
+export type PromoteUserState = { error?: string; success?: string } | undefined;
 
 export async function requireAdministrator(): Promise<Session> {
     const session = await authenticate();
@@ -59,7 +59,7 @@ export async function createUser(_previousState: CreateUserState, formData: Form
 
     if (!parsed.success) {
         await accountLogger.rejected(session, "User creation", "invalid_form_data");
-        return { error: parsed.error.issues[0] ?.message ?? "Invalid user information." };
+        return { error: parsed.error.issues[0]?.message ?? "Invalid user information." };
     }
 
     const { firstName, lastName, role, password } = parsed.data;
@@ -78,7 +78,7 @@ export async function createUser(_previousState: CreateUserState, formData: Form
         return { error: existingUser.active ? "A user with that name already exists." : "A deactivated user with that name already exists. Reactivate that account instead." };
     }
 
-    if (role === "MANAGER" && await isTeamPassword(password)) {
+    if (role === "MANAGER" && (await isTeamPassword(password))) {
         await accountLogger.rejected(session, "User creation", "manager_used_team_password", {
             requestedRole: role,
         });
@@ -86,7 +86,7 @@ export async function createUser(_previousState: CreateUserState, formData: Form
         return { error: "Managers cannot use the shared team password." };
     }
 
-    if (role === "MANAGER" && await isPrivilegedPasswordInUse(password)) {
+    if (role === "MANAGER" && (await isPrivilegedPasswordInUse(password))) {
         await accountLogger.rejected(session, "User creation", "privileged_password_not_unique", {
             requestedRole: role,
         });

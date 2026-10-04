@@ -14,10 +14,7 @@ import { requireAdministrator } from "@/server/users";
 
 const passwordLogger = createActionLogger("passwords");
 
-const PasswordSchema = z
-    .string()
-    .min(8, "Password must be at least 8 characters.")
-    .max(100, "Password cannot exceed 100 characters.");
+const PasswordSchema = z.string().min(8, "Password must be at least 8 characters.").max(100, "Password cannot exceed 100 characters.");
 
 const ChangeTeamPasswordSchema = z
     .object({
@@ -29,10 +26,12 @@ const ChangeTeamPasswordSchema = z
         message: "Passwords do not match.",
     });
 
-export type PasswordActionState = {
-    error?: string;
-    success?: string;
-} | undefined;
+export type PasswordActionState =
+    | {
+          error?: string;
+          success?: string;
+      }
+    | undefined;
 
 export async function hashPassword(password: string): Promise<string> {
     return hash(password, 12);
@@ -97,9 +96,11 @@ export async function isPrivilegedPasswordInUse(password: string, excludeUserId?
         where: {
             active: true,
             type: { in: ["MANAGER", "ADMINISTRATOR"] },
-            ...(excludeUserId !== undefined ? {
-                id: { not: excludeUserId },
-            } : {}),
+            ...(excludeUserId !== undefined
+                ? {
+                      id: { not: excludeUserId },
+                  }
+                : {}),
         },
         select: { pwdHash: true },
     });

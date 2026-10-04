@@ -93,7 +93,7 @@ const actionLabels: Record<AuditAction, string> = {
     USER_REACTIVATED: "User Reactivated",
     USER_PROMOTED: "User Promoted",
     USER_DEMOTED: "User Demoted",
-    TEAM_PASSWORD_CHANGED: "Team Password Changed"
+    TEAM_PASSWORD_CHANGED: "Team Password Changed",
 };
 
 const actionGroups: Record<AuditAction, Exclude<AuditGroup, "ALL">> = {
@@ -117,7 +117,7 @@ const actionGroups: Record<AuditAction, Exclude<AuditGroup, "ALL">> = {
     USER_REACTIVATED: "ACCOUNTS",
     USER_PROMOTED: "ACCOUNTS",
     USER_DEMOTED: "ACCOUNTS",
-    TEAM_PASSWORD_CHANGED: "ACCOUNTS"
+    TEAM_PASSWORD_CHANGED: "ACCOUNTS",
 };
 
 const groupOptions: readonly SelectDropdownOption<AuditGroup>[] = [
