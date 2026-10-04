@@ -38,6 +38,13 @@ enum AuditAction {
   USER_REACTIVATED
   USER_PROMOTED
   USER_DEMOTED
+  TEAM_PASSWORD_CHANGED
+}
+
+model SystemSettings {
+  id               Int      @id @default(1)
+  teamPasswordHash String
+  updatedAt        DateTime @updatedAt
 }
 
 model User {
