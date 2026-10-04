@@ -62,7 +62,6 @@ export default async function AccountsSettings() {
             <section className="border-b border-border py-8">
                 <h3 className="text-lg font-semibold text-fg">Create User</h3>
                 <p className="mt-1 text-sm text-fg-muted">Add a Standard or Manager account.</p>
-
                 <div className="max-w-xl">
                     <CreateUserForm />
                 </div>
