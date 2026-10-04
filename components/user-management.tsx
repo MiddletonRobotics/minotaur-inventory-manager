@@ -7,7 +7,7 @@ import ActionMenu, { actionMenuItemCSS, dangerousActionMenuItemCSS } from "@/com
 import Window from "@/components/ui/window";
 
 type DeleteUserButtonProps = { userId: number; userName: string };
-type DeactivatedUserActionsMenuProps = { userId: number; userName: string; userRole: "STANDARD" | "MANAGER" | "ADMINISTRATOR"; };
+type DeactivatedUserActionsMenuProps = { userId: number; userName: string; userRole: "STANDARD" | "MANAGER" | "ADMINISTRATOR" };
 type PromoteUserControlProps = { userId: number };
 type DemoteUserButtonProps = { userId: number; userName: string };
 type UserActionsMenuProps = { userId: number; userName: string; userRole: "STANDARD" | "MANAGER" | "ADMINISTRATOR" };
@@ -127,16 +127,16 @@ export function DeactivatedUserActionsMenu({ userId, userName, userRole }: Deact
     return (
         <>
             <ActionMenu>
-                <button type="button" onClick={openReactivateWindow} className={actionMenuItemCSS}>Reactivate</button>
+                <button type="button" onClick={openReactivateWindow} className={actionMenuItemCSS}>
+                    Reactivate
+                </button>
             </ActionMenu>
 
             <Window
                 open={reactivateOpen}
                 onClose={() => setReactivateOpen(false)}
                 title="Reactivate User"
-                description={
-                    userRole === "MANAGER" ? `Set a new unique Manager password for ${userName}.` : `Reactivate ${userName}. Their password will be reset to the shared team password.`
-                }
+                description={userRole === "MANAGER" ? `Set a new unique Manager password for ${userName}.` : `Reactivate ${userName}. Their password will be reset to the shared team password.`}
             >
                 <form
                     onSubmit={(event) => {
@@ -159,7 +159,9 @@ export function DeactivatedUserActionsMenu({ userId, userName, userRole }: Deact
                 >
                     {userRole === "MANAGER" && (
                         <div className="space-y-2">
-                            <label htmlFor={`reactivate-password-${userId}`} className="block text-sm font-medium text-fg">Manager Password</label>
+                            <label htmlFor={`reactivate-password-${userId}`} className="block text-sm font-medium text-fg">
+                                Manager Password
+                            </label>
                             <input
                                 id={`reactivate-password-${userId}`}
                                 name="password"
