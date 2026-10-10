@@ -29,7 +29,7 @@ export function VendorManagement({ vendors }: Props) {
     return (
         <div className="mt-6 max-w-xl">
             <form action={formAction} className="flex gap-2">
-                <input name="name" required placeholder="WestCoast Products" className="min-w-0 flex-1 rounded-md border bg-input px-3 py-2.5 text-sm text-fg outline-none focus:border-border-focus" />
+                <input name="name" required placeholder="WestCoast Products" className="min-w-0 flex-1 rounded-md border border-border bg-input px-3 py-2.5 text-sm text-fg outline-none focus:border-border-focus" />
                 <button type="submit" disabled={pending} className="rounded-md bg-accent px-4 py-2.5 text-sm text-white hover:bg-accent-hover disabled:opacity-60">
                     {pending ? "Adding..." : "Add Vendor"}
                 </button>

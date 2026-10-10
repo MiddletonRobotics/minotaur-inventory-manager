@@ -18,7 +18,7 @@ export function CreateProjectForm() {
                     type="text"
                     required
                     placeholder="2027 Competition Robot"
-                    className="w-full rounded-md border bg-input px-3 py-2.5 text-sm outline-none transition-colors placeholder:text-fg-dim focus:border-border-focus"
+                    className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm outline-none transition-colors placeholder:text-fg-dim focus:border-border-focus"
                 />
             </div>
 
@@ -31,7 +31,7 @@ export function CreateProjectForm() {
                     name="description"
                     rows={4}
                     placeholder="Optional project description"
-                    className="w-full resize-none rounded-md border bg-input px-3 py-2.5 text-sm outline-none transition-colors placeholder:text-fg-dim focus:border-border-focus"
+                    className="w-full resize-none rounded-md border border-border bg-input px-3 py-2.5 text-sm outline-none transition-colors placeholder:text-fg-dim focus:border-border-focus"
                 />
             </div>
 

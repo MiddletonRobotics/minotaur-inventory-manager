@@ -1,8 +1,10 @@
 "use client";
 
 import { useRef, useTransition, useState } from "react";
+import { ItemFieldConfigurationForm } from "@/components/item-management";
 import { createCategory, deleteAllItems, deleteCategory, moveAllItems, relocateSubcategory, type CategoryActionState } from "@/server/categories";
 import ActionMenu, { actionMenuItemCSS, dangerousActionMenuItemCSS } from "@/components/ui/action-menu";
+import type { ItemFieldDefinitionData } from "@/lib/itemFields";
 import Window from "@/components/ui/window";
 
 type ParentCategory = { id: number; name: string };
@@ -16,6 +18,8 @@ type SubcategoryManagementControlsProps = {
     itemCount: number;
     parentCategories: ParentCategory[];
     subcategories: SubcategoryOption[];
+    nameTemplate: string | null;
+    itemFields: ItemFieldDefinitionData[];
 };
 
 export function CreateCategoryForm({ parentCategories }: CreateCategoryFormProps) {
@@ -53,7 +57,7 @@ export function CreateCategoryForm({ parentCategories }: CreateCategoryFormProps
                     type="text"
                     required
                     placeholder={level === "CATEGORY" ? "Motors" : "Brushless Motors"}
-                    className="w-full rounded-md border bg-input px-3 py-2.5 text-sm outline-none transition-colors placeholder:text-fg-dim focus:border-border-focus"
+                    className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm outline-none transition-colors placeholder:text-fg-dim focus:border-border-focus"
                 />
             </div>
 
@@ -69,7 +73,7 @@ export function CreateCategoryForm({ parentCategories }: CreateCategoryFormProps
                         setLevel(event.currentTarget.value as "CATEGORY" | "SUBCATEGORY");
                         setState(undefined);
                     }}
-                    className="w-full rounded-md border bg-input px-3 py-2.5 text-sm text-fg outline-none focus:border-border-focus"
+                    className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm text-fg outline-none focus:border-border-focus"
                 >
                     <option value="CATEGORY">Category</option>
                     <option value="SUBCATEGORY">Subcategory</option>
@@ -136,8 +140,8 @@ export function DeleteCategoryButton({ categoryId, categoryName, disabled = fals
     );
 }
 
-export function SubcategoryActionsMenu({ subcategoryId, subcategoryName, currentParentId, itemCount, parentCategories, subcategories }: SubcategoryManagementControlsProps) {
-    const [modal, setModal] = useState<"relocate" | "move" | "deleteParts" | null>(null);
+export function SubcategoryActionsMenu({ subcategoryId, subcategoryName, currentParentId, itemCount, parentCategories, subcategories, nameTemplate, itemFields }: SubcategoryManagementControlsProps) {
+    const [modal, setModal] = useState<"configure" | "relocate" | "move" | "deleteParts" | null>(null);
     const deleteCategoryAction = deleteCategory.bind(null, subcategoryId);
     const otherParents = parentCategories.filter((category) => category.id !== currentParentId);
     const otherSubcategories = subcategories.filter((subcategory) => subcategory.id !== subcategoryId);
@@ -151,6 +155,9 @@ export function SubcategoryActionsMenu({ subcategoryId, subcategoryName, current
     return (
         <>
             <ActionMenu>
+                <button type="button" className={actionMenuItemCSS} onClick={() => setModal("configure")}>
+                    Configure Part Form
+                </button>
                 <button type="button" className={actionMenuItemCSS} onClick={() => setModal("relocate")}>
                     Relocate
                 </button>
@@ -174,6 +181,10 @@ export function SubcategoryActionsMenu({ subcategoryId, subcategoryName, current
                     </button>
                 </form>
             </ActionMenu>
+
+            <Window open={modal === "configure"} onClose={() => setModal(null)} title="Configure Part Form" description={`Define custom fields and generated part names for ${subcategoryName}.`} size="lg">
+                <ItemFieldConfigurationForm categoryId={subcategoryId} nameTemplate={nameTemplate} fields={itemFields} onSaved={() => setModal(null)} onCancel={() => setModal(null)} />
+            </Window>
 
             <Window open={modal === "relocate"} onClose={() => setModal(null)} title="Relocate Subcategory" description={`Move ${subcategoryName} under another parent category.`}>
                 <form

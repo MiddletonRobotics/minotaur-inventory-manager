@@ -1,5 +1,6 @@
 "use server";
 
+import { formatItemFieldValue, itemFieldInputName } from "@/lib/itemFields";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import prisma from "@/prisma/prisma";
@@ -10,7 +11,7 @@ import { z } from "zod";
 
 const itemLogger = createActionLogger("items");
 const ItemSchema = z.object({
-    name: z.string().trim().min(1, "Part name is required.").max(100),
+    name: z.string().trim().max(100).optional(),
     partNumber: z.string().trim().min(1, "Part number is required.").max(100),
     vendorId: z.coerce.number().int().positive(),
     locationId: z.string().trim().optional(),
@@ -31,6 +32,17 @@ const AdjustmentSchema = z.object({
 
 export type CreateItemState = { error?: string } | undefined;
 export type ItemActionState = { error?: string; success?: string } | undefined;
+
+type ParsedItemFieldValue = { fieldDefinitionId: number; value: string };
+type ActiveItemField = {
+    id: number;
+    key: string;
+    label: string;
+    type: "TEXT" | "INTEGER" | "DECIMAL" | "SELECT";
+    required: boolean;
+    unit: string | null;
+    options: unknown;
+};
 
 async function requireInventoryManager() {
     const session = await authenticate();
@@ -78,19 +90,124 @@ async function validateVendorAndLocation(vendorId: number, locationId?: string) 
     return { vendorId: vendor.id, locationId: parsedLocationId };
 }
 
+function getSelectOptions(options: unknown): string[] {
+    return Array.isArray(options) ? options.filter((option): option is string => typeof option === "string") : [];
+}
+
+function parseItemFieldValues(fields: ActiveItemField[], formData: FormData): { values: ParsedItemFieldValue[]; valuesByKey: Map<string, string>; error?: string } {
+    const values: ParsedItemFieldValue[] = [];
+    const valuesByKey = new Map<string, string>();
+
+    for (const field of fields) {
+        const rawValue = formData.get(itemFieldInputName(field.id));
+        const value = typeof rawValue === "string" ? rawValue.trim() : "";
+
+        if (!value) {
+            if (field.required) {
+                return { values, valuesByKey, error: `${field.label} is required.` };
+            }
+
+            continue;
+        }
+
+        let normalizedValue = value;
+
+        if (field.type === "INTEGER") {
+            const number = Number(value);
+
+            if (!Number.isInteger(number)) {
+                return { values, valuesByKey, error: `${field.label} must be a whole number.` };
+            }
+
+            normalizedValue = String(number);
+        } else if (field.type === "DECIMAL") {
+            const number = Number(value);
+
+            if (!Number.isFinite(number)) {
+                return { values, valuesByKey, error: `${field.label} must be a number.` };
+            }
+
+            normalizedValue = String(number);
+        } else if (field.type === "SELECT") {
+            const options = getSelectOptions(field.options);
+
+            if (!options.includes(value)) {
+                return { values, valuesByKey, error: `Select a valid ${field.label.toLowerCase()}.` };
+            }
+        }
+
+        values.push({ fieldDefinitionId: field.id, value: normalizedValue });
+        valuesByKey.set(field.key, normalizedValue);
+    }
+
+    return { values, valuesByKey };
+}
+
+function buildGeneratedName(template: string, fields: ActiveItemField[], valuesByKey: Map<string, string>): string | null {
+    const fieldsByKey = new Map(fields.map((field) => [field.key, field]));
+
+    let complete = true;
+    const generatedName = template.replace(/\{([a-z][a-z0-9_]*)\}/g, (_match, key: string) => {
+        const field = fieldsByKey.get(key);
+        const value = valuesByKey.get(key);
+
+        if (!field || !value) {
+            complete = false;
+            return "";
+        }
+
+        return formatItemFieldValue(value, field.unit);
+    });
+
+    if (!complete) return null;
+
+    return generatedName.replace(/\s+/g, " ").trim();
+}
+
+function resolveItemName(manualName: string | undefined, nameTemplate: string | null, fields: ActiveItemField[], valuesByKey: Map<string, string>): { name?: string; error?: string } {
+    const name = nameTemplate ? buildGeneratedName(nameTemplate, fields, valuesByKey) : manualName?.trim();
+
+    if (!name) {
+        return { error: nameTemplate ? "Complete all fields used by the generated part name." : "Part name is required." };
+    }
+
+    if (name.length > 100) {
+        return { error: "Generated part name cannot exceed 100 characters." };
+    }
+
+    return { name };
+}
+
 export async function createItem(categoryId: number, _previousState: CreateItemState, formData: FormData): Promise<CreateItemState> {
     const session: Session = await requireInventoryManager();
-
     const category = await prisma.category.findUnique({
         where: { id: categoryId },
         select: {
             name: true,
+            nameTemplate: true,
             parentId: true,
             parent: {
                 select: { name: true },
             },
+            itemFields: {
+                where: { active: true },
+                orderBy: {
+                    sortOrder: "asc",
+                },
+                select: {
+                    id: true,
+                    key: true,
+                    label: true,
+                    type: true,
+                    required: true,
+                    unit: true,
+                    options: true,
+                },
+            },
             _count: {
-                select: { children: true },
+                select: {
+                    children: true,
+                },
             },
         },
     });
@@ -100,7 +217,7 @@ export async function createItem(categoryId: number, _previousState: CreateItemS
     }
 
     const parsed = CreateItemSchema.safeParse({
-        name: formData.get("name"),
+        name: formData.get("name") || undefined,
         partNumber: formData.get("partNumber"),
         quantity: formData.get("quantity"),
         vendorId: formData.get("vendorId"),
@@ -112,7 +229,20 @@ export async function createItem(categoryId: number, _previousState: CreateItemS
         return { error: parsed.error.issues[0]?.message ?? "Invalid part information." };
     }
 
-    const { name, partNumber, quantity, vendorId, locationId, description } = parsed.data;
+    const customFields = parseItemFieldValues(category.itemFields, formData);
+
+    if (customFields.error) {
+        return { error: customFields.error };
+    }
+
+    const resolvedName = resolveItemName(parsed.data.name, category.nameTemplate, category.itemFields, customFields.valuesByKey);
+
+    if (!resolvedName.name) {
+        return { error: resolvedName.error ?? "Part name is required." };
+    }
+
+    const partName = resolvedName.name;
+    const { partNumber, quantity, vendorId, locationId, description } = parsed.data;
     const existingPart = await prisma.item.findUnique({
         where: { partNumber },
     });
@@ -130,7 +260,7 @@ export async function createItem(categoryId: number, _previousState: CreateItemS
     await prisma.$transaction(async (tx) => {
         const item = await tx.item.create({
             data: {
-                name,
+                name: partName,
                 partNumber,
                 quantity,
                 vendorId: relations.vendorId,
@@ -138,11 +268,13 @@ export async function createItem(categoryId: number, _previousState: CreateItemS
                 categoryId,
                 description: description ?? "",
                 material: null,
+                itemFieldValues: {
+                    create: customFields.values,
+                },
             },
         });
 
         const categoryName = category.parent ? `${category.parent.name} / ${category.name}` : category.name;
-
         await writeAuditLog(tx, {
             action: "PART_CREATED",
             entityId: item.id,
@@ -166,15 +298,42 @@ export async function editItem(itemId: number, categoryId: number, _previousStat
     const session = await requireInventoryManager();
     const item = await prisma.item.findUnique({
         where: { id: itemId },
+        include: {
+            itemFieldValues: true,
+            category: {
+                select: {
+                    nameTemplate: true,
+                    itemFields: {
+                        where: { active: true },
+                        orderBy: {
+                            sortOrder: "asc",
+                        },
+                        select: {
+                            id: true,
+                            key: true,
+                            label: true,
+                            type: true,
+                            required: true,
+                            unit: true,
+                            options: true,
+                        },
+                    },
+                },
+            },
+        },
     });
 
     if (!item || item.categoryId !== categoryId) {
-        await itemLogger.rejected(session, "Part edit", "part_not_found", { itemId, categoryId });
+        await itemLogger.rejected(session, "Part edit", "part_not_found", {
+            itemId,
+            categoryId,
+        });
+
         return { error: "Part does not exist." };
     }
 
     const parsed = ItemSchema.safeParse({
-        name: formData.get("name"),
+        name: formData.get("name") || undefined,
         partNumber: formData.get("partNumber"),
         vendorId: formData.get("vendorId"),
         locationId: formData.get("locationId") || undefined,
@@ -182,15 +341,38 @@ export async function editItem(itemId: number, categoryId: number, _previousStat
     });
 
     if (!parsed.success) {
-        await itemLogger.rejected(session, "Part edit", "invalid_form_data", { itemId, categoryId });
+        await itemLogger.rejected(session, "Part edit", "invalid_form_data", {
+            itemId,
+            categoryId,
+        });
+
         return { error: parsed.error.issues[0]?.message ?? "Invalid part information." };
     }
 
-    const { name, partNumber, vendorId, locationId, description } = parsed.data;
+    const customFields = parseItemFieldValues(item.category.itemFields, formData);
+
+    if (customFields.error) {
+        await itemLogger.rejected(session, "Part edit", "invalid_custom_field", {
+            itemId,
+            categoryId,
+        });
+
+        return { error: customFields.error };
+    }
+
+    const resolvedName = resolveItemName(parsed.data.name, item.category.nameTemplate, item.category.itemFields, customFields.valuesByKey);
+
+    if (!resolvedName.name) {
+        return { error: resolvedName.error ?? "Part name is required." };
+    }
+
+    const { partNumber, vendorId, locationId, description } = parsed.data;
     const duplicate = await prisma.item.findFirst({
         where: {
             partNumber,
-            id: { not: itemId },
+            id: {
+                not: itemId,
+            },
         },
     });
 
@@ -217,8 +399,13 @@ export async function editItem(itemId: number, categoryId: number, _previousStat
 
     const nextDescription = description ?? "";
     const changedFields: string[] = [];
+    const currentCustomValues = new Map(item.itemFieldValues.map((value) => [value.fieldDefinitionId, value.value]));
 
-    if (item.name !== name) {
+    const nextCustomValues = new Map(customFields.values.map((value) => [value.fieldDefinitionId, value.value]));
+
+    const customValuesChanged = item.category.itemFields.some((field) => (currentCustomValues.get(field.id) ?? "") !== (nextCustomValues.get(field.id) ?? ""));
+
+    if (item.name !== resolvedName.name) {
         changedFields.push("name");
     }
 
@@ -238,15 +425,49 @@ export async function editItem(itemId: number, categoryId: number, _previousStat
         changedFields.push("description");
     }
 
-    await prisma.item.update({
-        where: { id: itemId },
-        data: {
-            name,
-            partNumber,
-            vendorId: relations.vendorId,
-            locationId: relations.locationId,
-            description: nextDescription,
-        },
+    if (customValuesChanged) {
+        changedFields.push("partFields");
+    }
+
+    await prisma.$transaction(async (tx) => {
+        await tx.item.update({
+            where: { id: itemId },
+            data: {
+                name: resolvedName.name,
+                partNumber,
+                vendorId: relations.vendorId,
+                locationId: relations.locationId,
+                description: nextDescription,
+            },
+        });
+
+        for (const field of item.category.itemFields) {
+            const value = nextCustomValues.get(field.id);
+
+            if (value === undefined) {
+                await tx.itemFieldValue.deleteMany({
+                    where: {
+                        itemId,
+                        fieldDefinitionId: field.id,
+                    },
+                });
+            } else {
+                await tx.itemFieldValue.upsert({
+                    where: {
+                        itemId_fieldDefinitionId: {
+                            itemId,
+                            fieldDefinitionId: field.id,
+                        },
+                    },
+                    update: { value },
+                    create: {
+                        itemId,
+                        fieldDefinitionId: field.id,
+                        value,
+                    },
+                });
+            }
+        }
     });
 
     if (changedFields.length > 0) {

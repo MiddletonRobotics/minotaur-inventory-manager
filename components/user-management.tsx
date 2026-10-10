@@ -28,7 +28,7 @@ export function CreateUserForm() {
                         id="firstName"
                         name="firstName"
                         required
-                        className="w-full rounded-md border bg-input px-3 py-2.5 text-sm outline-none transition-colors placeholder:text-fg-dim focus:border-border-focus"
+                        className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm outline-none transition-colors placeholder:text-fg-dim focus:border-border-focus"
                         placeholder="First Name"
                     />
                 </div>
@@ -41,7 +41,7 @@ export function CreateUserForm() {
                         id="lastName"
                         name="lastName"
                         required
-                        className="w-full rounded-md border bg-input px-3 py-2.5 text-sm outline-none transition-colors placeholder:text-fg-dim focus:border-border-focus"
+                        className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm outline-none transition-colors placeholder:text-fg-dim focus:border-border-focus"
                         placeholder="Last Name"
                     />
                 </div>
@@ -56,7 +56,7 @@ export function CreateUserForm() {
                     name="role"
                     value={role}
                     onChange={(event) => setRole(event.currentTarget.value === "MANAGER" ? "MANAGER" : "STANDARD")}
-                    className="w-full rounded-md border bg-input px-3 py-2.5 text-sm text-fg outline-none focus:border-border-focus"
+                    className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm text-fg outline-none focus:border-border-focus"
                 >
                     <option value="STANDARD">Standard</option>
                     <option value="MANAGER">Manager</option>
@@ -74,7 +74,7 @@ export function CreateUserForm() {
                         type="password"
                         required
                         minLength={8}
-                        className="w-full rounded-md border bg-input px-3 py-2.5 text-sm outline-none transition-colors placeholder:text-fg-dim focus:border-border-focus"
+                        className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm outline-none transition-colors placeholder:text-fg-dim focus:border-border-focus"
                         placeholder="Enter a unique password"
                     />
 

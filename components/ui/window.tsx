@@ -3,9 +3,16 @@
 import { X } from "lucide-react";
 import { useEffect, type ReactNode } from "react";
 
-type WindowProps = { open: boolean; title: string; description?: string; onClose: () => void; children: ReactNode };
+type WindowProps = {
+    open: boolean;
+    title: string;
+    description?: string;
+    onClose: () => void;
+    children: ReactNode;
+    size?: "md" | "lg";
+};
 
-export default function Window({ open, title, description, onClose, children }: WindowProps) {
+export default function Window({ open, title, description, onClose, children, size = "md" }: WindowProps) {
     useEffect(() => {
         if (!open) return;
 
@@ -14,7 +21,6 @@ export default function Window({ open, title, description, onClose, children }: 
         };
 
         const previousOverflow = document.body.style.overflow;
-
         document.body.style.overflow = "hidden";
         window.addEventListener("keydown", handleKeyDown);
 
@@ -24,9 +30,9 @@ export default function Window({ open, title, description, onClose, children }: 
         };
     }, [open, onClose]);
 
-    if (!open) {
-        return null;
-    }
+    if (!open) return null;
+
+    const widthClass = size === "lg" ? "max-w-2xl" : "max-w-md";
 
     return (
         <div
@@ -35,11 +41,10 @@ export default function Window({ open, title, description, onClose, children }: 
                 if (event.target === event.currentTarget) onClose();
             }}
         >
-            <div role="dialog" aria-modal="true" className="w-full max-w-md rounded-lg border border-border bg-card p-5 shadow-2xl">
+            <div role="dialog" aria-modal="true" className={`max-h-[calc(100vh-2rem)] w-full ${widthClass} overflow-y-auto rounded-lg border border-border bg-card p-5 text-left shadow-2xl`}>
                 <div className="flex items-start justify-between gap-4">
                     <div>
                         <h2 className="text-lg font-semibold text-fg">{title}</h2>
-
                         {description && <p className="mt-1 text-sm text-fg-muted">{description}</p>}
                     </div>
 

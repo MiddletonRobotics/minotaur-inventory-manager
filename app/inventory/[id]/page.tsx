@@ -40,12 +40,33 @@ export default async function InventoryCategoryPage({ params }: InventoryCategor
                         },
                         select: { quantityCheckedOut: true },
                     },
+                    itemFieldValues: {
+                        select: {
+                            fieldDefinitionId: true,
+                            value: true,
+                        },
+                    },
                 },
+            },
+            itemFields: {
+                where: { active: true },
+                orderBy: { sortOrder: "asc" },
             },
         },
     });
 
     if (!category) notFound();
+
+    const itemFields = category.itemFields.map((field) => ({
+        id: field.id,
+        key: field.key,
+        label: field.label,
+        type: field.type,
+        required: field.required,
+        unit: field.unit,
+        options: Array.isArray(field.options) ? field.options.filter((option): option is string => typeof option === "string") : [],
+        sortOrder: field.sortOrder,
+    }));
 
     const session = await authenticate();
     const isSubcategory = category.parentId !== null;
@@ -111,7 +132,7 @@ export default async function InventoryCategoryPage({ params }: InventoryCategor
 
                     {isSubcategory && canManageInventory && (
                         <div className="mb-4">
-                            <AddItemButton categoryId={category.id} categoryName={category.name} vendors={vendors} locations={locations} />
+                            <AddItemButton categoryId={category.id} categoryName={category.name} vendors={vendors} locations={locations} nameTemplate={category.nameTemplate} itemFields={itemFields} />
                         </div>
                     )}
 
@@ -160,10 +181,13 @@ export default async function InventoryCategoryPage({ params }: InventoryCategor
                                                                 quantity: item.quantity,
                                                                 vendorId: item.vendorId,
                                                                 locationId: item.locationId,
+                                                                itemFieldValues: item.itemFieldValues,
                                                             }}
                                                             categoryId={category.id}
                                                             vendors={vendors}
                                                             locations={locations}
+                                                            nameTemplate={category.nameTemplate}
+                                                            itemFields={itemFields}
                                                         />
                                                     </td>
                                                 )}
@@ -174,7 +198,6 @@ export default async function InventoryCategoryPage({ params }: InventoryCategor
                             </table>
                         </div>
                     ) : null}
-
                     {category.children.length === 0 && category.items.length === 0 ? <p className="text-center text-sm text-fg-muted">This category does not have any subcategories or parts yet.</p> : null}
                 </div>
             </main>

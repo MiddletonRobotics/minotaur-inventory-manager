@@ -31,6 +31,15 @@ export default async function InventorySettings() {
                                 items: true,
                             },
                         },
+                        itemFields: {
+                            where: { active: true },
+                            orderBy: { sortOrder: "asc" },
+                            include: {
+                                _count: {
+                                    select: { values: true },
+                                },
+                            },
+                        },
                     },
                 },
             },
@@ -129,6 +138,18 @@ export default async function InventorySettings() {
                                                     itemCount={subcategory._count.items}
                                                     parentCategories={parentCategories}
                                                     subcategories={subcategories}
+                                                    nameTemplate={subcategory.nameTemplate}
+                                                    itemFields={subcategory.itemFields.map((field) => ({
+                                                        id: field.id,
+                                                        key: field.key,
+                                                        label: field.label,
+                                                        type: field.type,
+                                                        required: field.required,
+                                                        unit: field.unit,
+                                                        options: Array.isArray(field.options) ? field.options.filter((option): option is string => typeof option === "string") : [],
+                                                        sortOrder: field.sortOrder,
+                                                        valueCount: field._count.values,
+                                                    }))}
                                                 />
                                             </div>
                                         ))}

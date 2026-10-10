@@ -10,6 +10,7 @@ export type AuditAction =
     | "INVENTORY_ADJUSTED"
     | "PART_CREATED"
     | "PART_DELETED"
+    | "PART_FIELD_UPDATED"
     | "PROJECT_CREATED"
     | "PROJECT_ARCHIVED"
     | "CATEGORY_CREATED"
@@ -76,6 +77,7 @@ const actionLabels: Record<AuditAction, string> = {
     INVENTORY_ADJUSTED: "Quantity Adjusted",
     PART_CREATED: "Part Added",
     PART_DELETED: "Part Removed",
+    PART_FIELD_UPDATED: "Part Form Updated",
     PROJECT_CREATED: "Project Created",
     PROJECT_ARCHIVED: "Project Archived",
     CATEGORY_CREATED: "Category Created",
@@ -100,6 +102,7 @@ const actionGroups: Record<AuditAction, Exclude<AuditGroup, "ALL">> = {
     INVENTORY_ADJUSTED: "INVENTORY",
     PART_CREATED: "INVENTORY",
     PART_DELETED: "INVENTORY",
+    PART_FIELD_UPDATED: "CATEGORIES",
     PROJECT_CREATED: "PROJECTS",
     PROJECT_ARCHIVED: "PROJECTS",
     CATEGORY_CREATED: "CATEGORIES",

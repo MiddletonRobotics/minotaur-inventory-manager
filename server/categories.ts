@@ -323,24 +323,36 @@ export async function moveAllItems(sourceSubcategoryId: number, _previousState: 
 
     const [source, target] = await Promise.all([
         prisma.category.findUnique({
-            where: {
-                id: sourceSubcategoryId,
-            },
+            where: { id: sourceSubcategoryId },
             select: {
                 id: true,
                 name: true,
                 parentId: true,
+                nameTemplate: true,
+                _count: {
+                    select: {
+                        itemFields: {
+                            where: { active: true },
+                        },
+                    },
+                },
             },
         }),
 
         prisma.category.findUnique({
-            where: {
-                id: targetSubcategoryId,
-            },
+            where: { id: targetSubcategoryId },
             select: {
                 id: true,
                 name: true,
                 parentId: true,
+                nameTemplate: true,
+                _count: {
+                    select: {
+                        itemFields: {
+                            where: { active: true },
+                        },
+                    },
+                },
             },
         }),
     ]);
@@ -363,13 +375,18 @@ export async function moveAllItems(sourceSubcategoryId: number, _previousState: 
         return { error: "The destination must be a subcategory" };
     }
 
+    if (source.nameTemplate || target.nameTemplate || source._count.itemFields > 0 || target._count.itemFields > 0) {
+        await categoryLogger.rejected(session, "Bulk part move", "custom_part_fields_configured", {
+            sourceSubcategoryId,
+            targetSubcategoryId,
+        });
+
+        return { error: "Bulk moving parts between subcategories with custom part forms is not supported yet." };
+    }
+
     const result = await prisma.item.updateMany({
-        where: {
-            categoryId: source.id,
-        },
-        data: {
-            categoryId: target.id,
-        },
+        where: { categoryId: source.id },
+        data: { categoryId: target.id },
     });
 
     await categoryLogger.completed(session, "Bulk part move", {

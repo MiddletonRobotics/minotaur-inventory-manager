@@ -31,9 +31,9 @@ export function StorageLocationManagement({ locations }: Props) {
     return (
         <div className="mt-6 max-w-xl">
             <form action={formAction} className="space-y-3">
-                <input name="name" required placeholder="Shelf A" className="w-full rounded-md border bg-input px-3 py-2.5 text-sm text-fg outline-none focus:border-border-focus" />
+                <input name="name" required placeholder="Shelf A" className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm text-fg outline-none focus:border-border-focus" />
                 <div className="flex gap-2">
-                    <select name="parentId" defaultValue="" className="min-w-0 flex-1 rounded-md border bg-input px-3 py-2.5 text-sm text-fg outline-none focus:border-border-focus">
+                    <select name="parentId" defaultValue="" className="min-w-0 flex-1 rounded-md border border-border bg-input px-3 py-2.5 text-sm text-fg outline-none focus:border-border-focus">
                         <option value="">Top-level location</option>
 
                         {parentLocations.map((location) => (
