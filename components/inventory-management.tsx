@@ -85,7 +85,7 @@ export function InventoryToolbar({ vendors, locations }: InventoryToolbarProps) 
                         aria-haspopup="menu"
                         aria-expanded={open}
                         aria-controls={open ? menuId : undefined}
-                        className={`inline-flex h-[42px] shrink-0 items-center gap-2 rounded-md border px-3.5 text-sm font-medium transition-colors ${
+                        className={`inline-flex h-10.5 shrink-0 items-center gap-2 rounded-md border px-3.5 text-sm font-medium transition-colors ${
                             activeFilterCount > 0 ? "border-accent bg-accent/10 text-fg" : "border-border bg-card text-fg-muted hover:border-border-focus hover:text-fg"
                         }`}
                     >
@@ -110,7 +110,7 @@ export function InventoryToolbar({ vendors, locations }: InventoryToolbarProps) 
                                 id="inventory-vendor-filter"
                                 value={vendor}
                                 onChange={(event) => replaceParams({ vendor: event.currentTarget.value || null })}
-                                className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm text-fg outline-none transition-colors focus:border-border-focus"
+                                className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm text-fg outline-none transition-colors focus:border-gray-400"
                             >
                                 <option value="">All Vendors</option>
                                 {vendors.map((option) => (
@@ -129,7 +129,7 @@ export function InventoryToolbar({ vendors, locations }: InventoryToolbarProps) 
                                 id="inventory-location-filter"
                                 value={location}
                                 onChange={(event) => replaceParams({ location: event.currentTarget.value || null })}
-                                className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm text-fg outline-none transition-colors focus:border-border-focus"
+                                className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm text-fg outline-none transition-colors focus:border-gray-400"
                             >
                                 <option value="">All Locations</option>
                                 <option value="none">Not Set</option>

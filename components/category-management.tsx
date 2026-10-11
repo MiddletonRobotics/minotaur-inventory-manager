@@ -57,7 +57,7 @@ export function CreateCategoryForm({ parentCategories }: CreateCategoryFormProps
                     type="text"
                     required
                     placeholder={level === "CATEGORY" ? "Motors" : "Brushless Motors"}
-                    className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm outline-none transition-colors placeholder:text-fg-dim focus:border-border-focus"
+                    className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm outline-none transition-colors placeholder:text-fg-dim focus:border-gray-400"
                 />
             </div>
 
@@ -73,7 +73,7 @@ export function CreateCategoryForm({ parentCategories }: CreateCategoryFormProps
                         setLevel(event.currentTarget.value as "CATEGORY" | "SUBCATEGORY");
                         setState(undefined);
                     }}
-                    className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm text-fg outline-none focus:border-border-focus"
+                    className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm text-fg outline-none focus:border-gray-400"
                 >
                     <option value="CATEGORY">Category</option>
                     <option value="SUBCATEGORY">Subcategory</option>
@@ -85,7 +85,7 @@ export function CreateCategoryForm({ parentCategories }: CreateCategoryFormProps
                     <label htmlFor="parentId" className="block text-sm font-medium text-fg">
                         Parent Category
                     </label>
-                    <select id="parentId" name="parentId" required defaultValue="" className="w-full rounded-md border bg-input px-3 py-2.5 text-sm text-fg outline-none focus:border-border-focus">
+                    <select id="parentId" name="parentId" required defaultValue="" className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm text-fg outline-none focus:border-gray-400">
                         <option value="" disabled>
                             Select a category
                         </option>
@@ -207,7 +207,7 @@ export function SubcategoryActionsMenu({ subcategoryId, subcategoryName, current
                     }}
                     className="space-y-4"
                 >
-                    <select name="parentId" required defaultValue="" className="w-full rounded-md border bg-input px-3 py-2.5 text-sm text-fg outline-none focus:border-border-focus">
+                    <select name="parentId" required defaultValue="" className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm text-fg outline-none focus:border-gray-400">
                         <option value="" disabled>
                             Select category
                         </option>
@@ -253,7 +253,7 @@ export function SubcategoryActionsMenu({ subcategoryId, subcategoryName, current
                     }}
                     className="space-y-4"
                 >
-                    <select name="targetCategoryId" required defaultValue="" className="w-full rounded-md border bg-input px-3 py-2.5 text-sm text-fg outline-none focus:border-border-focus">
+                    <select name="targetCategoryId" required defaultValue="" className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm text-fg outline-none focus:border-gray-400">
                         <option value="" disabled>
                             Select destination
                         </option>
