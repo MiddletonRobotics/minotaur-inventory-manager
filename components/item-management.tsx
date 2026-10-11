@@ -115,7 +115,14 @@ export function AddItemButton({ categoryId, categoryName, vendors, locations, na
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div className="space-y-2">
                                     <label className="block text-sm font-medium text-fg">Quantity</label>
-                                    <input name="quantity" type="number" required min={0} defaultValue={1} className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm text-fg outline-none transition-colors focus:border-gray-400" />
+                                    <input
+                                        name="quantity"
+                                        type="number"
+                                        required
+                                        min={0}
+                                        defaultValue={1}
+                                        className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm text-fg outline-none transition-colors focus:border-gray-400"
+                                    />
                                 </div>
 
                                 <div className="space-y-2">
