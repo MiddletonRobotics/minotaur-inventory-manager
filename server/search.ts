@@ -3,8 +3,7 @@ import "server-only";
 import prisma from "@/prisma/prisma";
 import type { Prisma } from "@/prisma/generated/client";
 
-
-export type ItemSearchScope = | { type: "ALL"; } | { type: "CATEGORY"; categoryId: number; } | { type: "SUBCATEGORY"; categoryId: number; };
+export type ItemSearchScope = { type: "ALL" } | { type: "CATEGORY"; categoryId: number } | { type: "SUBCATEGORY"; categoryId: number };
 
 export type ItemSearchOptions = {
     query?: string;
@@ -12,88 +11,91 @@ export type ItemSearchOptions = {
     locationId?: number;
     locationUnset?: boolean;
     scope?: ItemSearchScope;
-}
+};
 
-export function buildItemSearchWhere({ query, vendorId, locationId, locationUnset = false, scope = { type: "ALL" }}: ItemSearchOptions): Prisma.ItemWhereInput {
+export function buildItemSearchWhere({ query, vendorId, locationId, locationUnset = false, scope = { type: "ALL" } }: ItemSearchOptions): Prisma.ItemWhereInput {
     const conditions: Prisma.ItemWhereInput[] = [];
 
-    if(scope.type === "SUBCATEGORY") {
+    if (scope.type === "SUBCATEGORY") {
         conditions.push({
-            OR: [{
-                categoryId: scope.categoryId
-            },
-            {
-                category: {
-                    parentId: scope.categoryId
-                }
-            }]
+            OR: [
+                {
+                    categoryId: scope.categoryId,
+                },
+                {
+                    category: {
+                        parentId: scope.categoryId,
+                    },
+                },
+            ],
         });
     }
 
-    if(scope.type === "SUBCATEGORY") {
+    if (scope.type === "SUBCATEGORY") {
         conditions.push({
-            categoryId: scope.categoryId
+            categoryId: scope.categoryId,
         });
     }
 
     const trimmedQuery = query?.trim();
 
-    if(trimmedQuery) {
+    if (trimmedQuery) {
         conditions.push({
-            OR: [{
-                name: {
-                    contains: trimmedQuery,
-                    mode: "insensitive"
-                }
-            },
-            {
-                partNumber: {
-                    contains: trimmedQuery,
-                    mode: "insensitive"
-                }
-            }]
+            OR: [
+                {
+                    name: {
+                        contains: trimmedQuery,
+                        mode: "insensitive",
+                    },
+                },
+                {
+                    partNumber: {
+                        contains: trimmedQuery,
+                        mode: "insensitive",
+                    },
+                },
+            ],
         });
     }
 
     if (vendorId) {
         conditions.push({
-            vendorId
+            vendorId,
         });
     }
 
     if (locationUnset) {
         conditions.push({
-            locationId: null
+            locationId: null,
         });
     } else if (locationId) {
         conditions.push({
-            OR: [{
-                locationId
-            },
-            {
-                location : {
-                    parentId: locationId
-                }
-            }]
+            OR: [
+                {
+                    locationId,
+                },
+                {
+                    location: {
+                        parentId: locationId,
+                    },
+                },
+            ],
         });
     }
 
     if (conditions.length === 0) {
-        return {}
+        return {};
     }
 
     return {
-        AND: conditions
-    }
+        AND: conditions,
+    };
 }
 
 export async function searchItems(options: ItemSearchOptions) {
     return prisma.item.findMany({
         where: buildItemSearchWhere(options),
-        orderBy: [
-            { name: "asc" },
-            { partNumber: "asc" },
-        ],
+        orderBy: [{ name: "asc" }, { partNumber: "asc" }],
         include: {
             category: {
                 include: {

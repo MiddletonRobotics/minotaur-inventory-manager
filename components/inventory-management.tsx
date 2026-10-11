@@ -7,10 +7,9 @@ import Dropdown from "@/components/ui/dropdown";
 import SearchInput from "@/components/ui/search-input";
 import Link from "next/link";
 
-
-type VendorOption = { id: number; name: string; };
-type LocationOption = { id: number; name: string; parentId: number | null; };
-type InventoryToolbarProps = { vendors: VendorOption[]; locations: LocationOption[]; };
+type VendorOption = { id: number; name: string };
+type LocationOption = { id: number; name: string; parentId: number | null };
+type InventoryToolbarProps = { vendors: VendorOption[]; locations: LocationOption[] };
 
 function locationLabel(location: LocationOption, locations: LocationOption[]): string {
     const parent = locations.find((candidate) => candidate.id === location.parentId);
@@ -27,7 +26,7 @@ function searchLocationLabel(item: InventorySearchResult): string {
     return item.location.name;
 }
 
-function InventorySearchField({ initialValue, replaceQuery }: { initialValue: string; replaceQuery: (query: string) => void; }) {
+function InventorySearchField({ initialValue, replaceQuery }: { initialValue: string; replaceQuery: (query: string) => void }) {
     const [value, setValue] = useState(initialValue);
 
     return (
@@ -92,9 +91,7 @@ export function InventoryToolbar({ vendors, locations }: InventoryToolbarProps) 
                     >
                         <span className="hidden sm:inline">Filters</span>
                         <SlidersHorizontal size={18} />
-                        {activeFilterCount > 0 && (
-                            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1.5 text-xs font-semibold text-white">{activeFilterCount}</span>
-                        )}
+                        {activeFilterCount > 0 && <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1.5 text-xs font-semibold text-white">{activeFilterCount}</span>}
                     </button>
                 )}
             >
@@ -106,7 +103,9 @@ export function InventoryToolbar({ vendors, locations }: InventoryToolbarProps) 
                         </div>
 
                         <div className="space-y-2">
-                            <label htmlFor="inventory-vendor-filter" className="block text-xs font-medium text-fg-muted">Vendor</label>
+                            <label htmlFor="inventory-vendor-filter" className="block text-xs font-medium text-fg-muted">
+                                Vendor
+                            </label>
                             <select
                                 id="inventory-vendor-filter"
                                 value={vendor}
@@ -115,13 +114,17 @@ export function InventoryToolbar({ vendors, locations }: InventoryToolbarProps) 
                             >
                                 <option value="">All Vendors</option>
                                 {vendors.map((option) => (
-                                    <option key={option.id} value={option.id}>{option.name}</option>
+                                    <option key={option.id} value={option.id}>
+                                        {option.name}
+                                    </option>
                                 ))}
                             </select>
                         </div>
 
                         <div className="space-y-2">
-                            <label htmlFor="inventory-location-filter" className="block text-xs font-medium text-fg-muted">Location</label>
+                            <label htmlFor="inventory-location-filter" className="block text-xs font-medium text-fg-muted">
+                                Location
+                            </label>
                             <select
                                 id="inventory-location-filter"
                                 value={location}
@@ -162,12 +165,12 @@ type InventorySearchResult = {
     categoryId: number;
     category: {
         name: string;
-        parent: { name: string; } | null;
+        parent: { name: string } | null;
     };
-    vendor: { name: string; };
+    vendor: { name: string };
     location: {
         name: string;
-        parent: { name: string; } | null;
+        parent: { name: string } | null;
     } | null;
     checkouts: {
         quantityCheckedOut: number;
@@ -186,57 +189,57 @@ function categoryLabel(item: InventorySearchResult): string {
 
 export function InventorySearchResults({ items, queryString }: InventorySearchResultsProps) {
     if (items.length === 0) {
-        return (
-            <p className="rounded-lg border border-border bg-card px-5 py-8 text-center text-sm text-fg-muted">No parts match your search or filters.</p>
-        );
+        return <p className="rounded-lg border border-border bg-card px-5 py-8 text-center text-sm text-fg-muted">No parts match your search or filters.</p>;
     }
 
     return (
         <section>
-            <p className="mb-3 text-sm text-fg-muted">{items.length}{" "}{items.length === 1 ? "part" : "parts"}{" "} found</p>
+            <p className="mb-3 text-sm text-fg-muted">
+                {items.length} {items.length === 1 ? "part" : "parts"} found
+            </p>
             <div className="overflow-hidden rounded-xl border border-border bg-card">
                 {items.map((item) => {
-                        const used = item.checkouts.reduce((total, checkout) => total + checkout.quantityCheckedOut, 0);
-                        const available = item.quantity - used;
-                        const href = queryString ? `/inventory/${item.categoryId}?${queryString}` : `/inventory/${item.categoryId}`;
+                    const used = item.checkouts.reduce((total, checkout) => total + checkout.quantityCheckedOut, 0);
+                    const available = item.quantity - used;
+                    const href = queryString ? `/inventory/${item.categoryId}?${queryString}` : `/inventory/${item.categoryId}`;
 
-                        return (
-                            <Link key={item.id} href={href} className="block border-b border-border px-5 py-4 transition-colors last:border-b-0 hover:bg-input/60">
-                                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                    <div className="min-w-0">
-                                        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                                            <h2 className="font-medium text-fg">{item.name}</h2>
-                                            <span className="text-sm text-fg-muted">{item.partNumber}</span>
-                                        </div>
-
-                                        <p className="mt-1 text-xs text-fg-dim">{categoryLabel(item)}</p>
-                                        <p className="mt-2 text-xs text-fg-muted">{item.vendor.name}
-                                            <span className="px-1 text-fg-dim">•</span>
-                                            {searchLocationLabel(item)}
-                                        </p>
+                    return (
+                        <Link key={item.id} href={href} className="block border-b border-border px-5 py-4 transition-colors last:border-b-0 hover:bg-input/60">
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                <div className="min-w-0">
+                                    <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                                        <h2 className="font-medium text-fg">{item.name}</h2>
+                                        <span className="text-sm text-fg-muted">{item.partNumber}</span>
                                     </div>
 
-                                    <div className="flex shrink-0 gap-5 text-xs sm:text-right">
-                                        <div>
-                                            <p className="uppercase tracking-wide text-fg-dim">Total</p>
-                                            <p className="mt-1 font-semibold text-fg">{item.quantity}</p>
-                                        </div>
+                                    <p className="mt-1 text-xs text-fg-dim">{categoryLabel(item)}</p>
+                                    <p className="mt-2 text-xs text-fg-muted">
+                                        {item.vendor.name}
+                                        <span className="px-1 text-fg-dim">•</span>
+                                        {searchLocationLabel(item)}
+                                    </p>
+                                </div>
 
-                                        <div>
-                                            <p className="uppercase tracking-wide text-fg-dim">Used</p>
-                                            <p className="mt-1 font-semibold text-fg">{used}</p>
-                                        </div>
+                                <div className="flex shrink-0 gap-5 text-xs sm:text-right">
+                                    <div>
+                                        <p className="uppercase tracking-wide text-fg-dim">Total</p>
+                                        <p className="mt-1 font-semibold text-fg">{item.quantity}</p>
+                                    </div>
 
-                                        <div>
-                                            <p className="uppercase tracking-wide text-fg-dim">Available</p>
-                                            <p className="mt-1 font-semibold text-fg">{available}</p>
-                                        </div>
+                                    <div>
+                                        <p className="uppercase tracking-wide text-fg-dim">Used</p>
+                                        <p className="mt-1 font-semibold text-fg">{used}</p>
+                                    </div>
+
+                                    <div>
+                                        <p className="uppercase tracking-wide text-fg-dim">Available</p>
+                                        <p className="mt-1 font-semibold text-fg">{available}</p>
                                     </div>
                                 </div>
-                            </Link>
-                        );
-                    },
-                )}
+                            </div>
+                        </Link>
+                    );
+                })}
             </div>
         </section>
     );

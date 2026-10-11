@@ -6,36 +6,36 @@ import { getItemSearchFilterOptions, searchItems } from "@/server/search";
 import Navbar from "@/components/navbar";
 import prisma from "@/prisma/prisma";
 
-
-type InventoryPageProps = { searchParams: Promise<InventorySearchParams>; };
+type InventoryPageProps = { searchParams: Promise<InventorySearchParams> };
 
 export default async function Inventory({ searchParams }: InventoryPageProps) {
     const filters = parseInventorySearchParams(await searchParams);
     const searching = hasInventorySearch(filters);
     const [categories, filterOptions, searchResults] = await Promise.all([
         prisma.category.findMany({
-                where: { parentId: null },
-                orderBy: { name: "asc" },
-                include: {
-                    _count: {
-                        select: {
-                            children: true,
-                            items: true,
-                        },
+            where: { parentId: null },
+            orderBy: { name: "asc" },
+            include: {
+                _count: {
+                    select: {
+                        children: true,
+                        items: true,
                     },
                 },
             },
-        ),
+        }),
 
         getItemSearchFilterOptions(),
 
-        searching ? searchItems({
-            query: filters.query || undefined,
-            vendorId: filters.vendorId ?? undefined,
-            locationId: filters.locationId ?? undefined,
-            locationUnset: filters.locationUnset,
-            scope: { type: "ALL" },
-        }) : Promise.resolve([]),
+        searching
+            ? searchItems({
+                  query: filters.query || undefined,
+                  vendorId: filters.vendorId ?? undefined,
+                  locationId: filters.locationId ?? undefined,
+                  locationUnset: filters.locationUnset,
+                  scope: { type: "ALL" },
+              })
+            : Promise.resolve([]),
     ]);
 
     const [vendors, locations] = filterOptions;

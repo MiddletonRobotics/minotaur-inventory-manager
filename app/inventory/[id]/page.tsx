@@ -9,7 +9,7 @@ import { buildItemSearchWhere, getItemSearchFilterOptions, searchItems } from "@
 import { authenticate } from "@/server/session";
 
 type InventoryCategoryPageProps = {
-    params: Promise<{id: string}>;
+    params: Promise<{ id: string }>;
     searchParams: Promise<InventorySearchParams>;
 };
 
@@ -37,7 +37,7 @@ export default async function InventoryCategoryPage({ params, searchParams }: In
                 },
             },
             itemFields: {
-                where: { active: true }, 
+                where: { active: true },
                 orderBy: { sortOrder: "asc" },
             },
         },
@@ -45,7 +45,7 @@ export default async function InventoryCategoryPage({ params, searchParams }: In
 
     if (!category) notFound();
 
-    const [session, filterOptions ] = await Promise.all([authenticate(), getItemSearchFilterOptions()]);
+    const [session, filterOptions] = await Promise.all([authenticate(), getItemSearchFilterOptions()]);
     const [vendors, locations] = filterOptions;
     const isSubcategory = category.parentId !== null;
     const canManageInventory = session?.user.role === "MANAGER" || session?.user.role === "ADMINISTRATOR";
@@ -61,55 +61,62 @@ export default async function InventoryCategoryPage({ params, searchParams }: In
     }));
 
     const [items, searchResults] = await Promise.all([
-        isSubcategory ? prisma.item.findMany({
-            where: buildItemSearchWhere({
-                query: filters.query || undefined,
-                vendorId: filters.vendorId ?? undefined,
-                locationId: filters.locationId ?? undefined,
-                locationUnset: filters.locationUnset,
-                scope: {
-                    type: "SUBCATEGORY",
-                    categoryId,
-                },
-            }),
-            orderBy: [{
-                name: "asc",
-            },
-            {
-                partNumber: "asc",
-            }],
-            include: {
-                vendor: true,
-                location: {
-                    include: { parent: true },
-                },
-                checkouts: {
-                    where: {
-                        project:  {
-                            status: "ACTIVE",
-                        },
-                    },
-                    select: {
-                        quantityCheckedOut: true,
-                    },
-                },
-                itemFieldValues: {
-                    select: {
-                        fieldDefinitionId: true,
-                        value: true,
-                    },
-                },
-            },
-        }) : Promise.resolve([]), !isSubcategory && searching ? searchItems({
-            query: filters.query || undefined,
-            vendorId: filters.vendorId ?? undefined,
-            locationId: filters.locationId ?? undefined,
-            locationUnset: filters.locationUnset,
-            scope: {
-                type: "CATEGORY",
-                categoryId,
-            },
-        }) : Promise.resolve([])
+        isSubcategory
+            ? prisma.item.findMany({
+                  where: buildItemSearchWhere({
+                      query: filters.query || undefined,
+                      vendorId: filters.vendorId ?? undefined,
+                      locationId: filters.locationId ?? undefined,
+                      locationUnset: filters.locationUnset,
+                      scope: {
+                          type: "SUBCATEGORY",
+                          categoryId,
+                      },
+                  }),
+                  orderBy: [
+                      {
+                          name: "asc",
+                      },
+                      {
+                          partNumber: "asc",
+                      },
+                  ],
+                  include: {
+                      vendor: true,
+                      location: {
+                          include: { parent: true },
+                      },
+                      checkouts: {
+                          where: {
+                              project: {
+                                  status: "ACTIVE",
+                              },
+                          },
+                          select: {
+                              quantityCheckedOut: true,
+                          },
+                      },
+                      itemFieldValues: {
+                          select: {
+                              fieldDefinitionId: true,
+                              value: true,
+                          },
+                      },
+                  },
+              })
+            : Promise.resolve([]),
+        !isSubcategory && searching
+            ? searchItems({
+                  query: filters.query || undefined,
+                  vendorId: filters.vendorId ?? undefined,
+                  locationId: filters.locationId ?? undefined,
+                  locationUnset: filters.locationUnset,
+                  scope: {
+                      type: "CATEGORY",
+                      categoryId,
+                  },
+              })
+            : Promise.resolve([]),
     ]);
 
     return (
@@ -118,11 +125,15 @@ export default async function InventoryCategoryPage({ params, searchParams }: In
             <main className="min-h-[calc(100vh-64px)] w-full px-4 py-10 font-bricolage sm:px-8">
                 <div className="mx-auto max-w-6xl">
                     <div className="mb-8 flex items-center gap-2 text-sm text-fg-muted">
-                        <Link href="/inventory" className="transition-colors hover:text-fg">Inventory</Link>
+                        <Link href="/inventory" className="transition-colors hover:text-fg">
+                            Inventory
+                        </Link>
                         {category.parent ? (
                             <>
                                 <span>/</span>
-                                <Link href={`/inventory/${category.parent.id}`} className="transition-colors hover:text-fg">{category.parent.name}</Link>
+                                <Link href={`/inventory/${category.parent.id}`} className="transition-colors hover:text-fg">
+                                    {category.parent.name}
+                                </Link>
                             </>
                         ) : null}
 
@@ -159,7 +170,7 @@ export default async function InventoryCategoryPage({ params, searchParams }: In
                         <>
                             {canManageInventory && (
                                 <div className="mb-4">
-                                    <AddItemButton categoryId={category.id} categoryName={category.name} vendors={vendors} locations={locations}  nameTemplate={category.nameTemplate} itemFields={itemFields} />
+                                    <AddItemButton categoryId={category.id} categoryName={category.name} vendors={vendors} locations={locations} nameTemplate={category.nameTemplate} itemFields={itemFields} />
                                 </div>
                             )}
 
@@ -175,9 +186,7 @@ export default async function InventoryCategoryPage({ params, searchParams }: In
                                                 <th className="px-4 py-3 font-semibold">Total</th>
                                                 <th className="px-4 py-3 font-semibold">Used</th>
                                                 <th className="px-4 py-3 font-semibold">Available</th>
-                                                {canManageInventory && (
-                                                    <th className="px-4 py-3 text-right font-semibold">Actions</th>
-                                                )}
+                                                {canManageInventory && <th className="px-4 py-3 text-right font-semibold">Actions</th>}
                                             </tr>
                                         </thead>
 
@@ -194,7 +203,9 @@ export default async function InventoryCategoryPage({ params, searchParams }: In
                                                         </td>
                                                         <td className="px-4 py-3 text-fg-muted">{item.partNumber}</td>
                                                         <td className="px-4 py-3 text-fg-muted">{item.vendor.name}</td>
-                                                        <td className="px-4 py-3 text-fg-muted">{item.location ? item.location.parent ? `${item.location.parent.name} / ${item.location.name}` : item.location.name : "Not set"}</td>
+                                                        <td className="px-4 py-3 text-fg-muted">
+                                                            {item.location ? (item.location.parent ? `${item.location.parent.name} / ${item.location.name}` : item.location.name) : "Not set"}
+                                                        </td>
                                                         <td className="px-4 py-3 text-fg-muted">{item.quantity}</td>
                                                         <td className="px-4 py-3 text-fg-muted">{checkedOut}</td>
                                                         <td className="px-4 py-3 font-semibold text-fg">{available}</td>
