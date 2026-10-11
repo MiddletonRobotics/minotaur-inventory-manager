@@ -28,7 +28,7 @@ export function CreateUserForm() {
                         id="firstName"
                         name="firstName"
                         required
-                        className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm outline-none transition-colors placeholder:text-fg-dim focus:border-border-focus"
+                        className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm outline-none transition-colors placeholder:text-fg-dim focus:border-gray-400"
                         placeholder="First Name"
                     />
                 </div>
@@ -41,7 +41,7 @@ export function CreateUserForm() {
                         id="lastName"
                         name="lastName"
                         required
-                        className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm outline-none transition-colors placeholder:text-fg-dim focus:border-border-focus"
+                        className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm outline-none transition-colors placeholder:text-fg-dim focus:border-gray-400"
                         placeholder="Last Name"
                     />
                 </div>
@@ -56,7 +56,7 @@ export function CreateUserForm() {
                     name="role"
                     value={role}
                     onChange={(event) => setRole(event.currentTarget.value === "MANAGER" ? "MANAGER" : "STANDARD")}
-                    className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm text-fg outline-none focus:border-border-focus"
+                    className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm text-fg outline-none focus:border-gray-400"
                 >
                     <option value="STANDARD">Standard</option>
                     <option value="MANAGER">Manager</option>
@@ -74,7 +74,7 @@ export function CreateUserForm() {
                         type="password"
                         required
                         minLength={8}
-                        className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm outline-none transition-colors placeholder:text-fg-dim focus:border-border-focus"
+                        className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm outline-none transition-colors placeholder:text-fg-dim focus:border-gray-400"
                         placeholder="Enter a unique password"
                     />
 
@@ -156,7 +156,7 @@ export function TeamPasswordManagement() {
                             maxLength={100}
                             autoComplete="new-password"
                             placeholder="Enter a new team password"
-                            className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm text-fg outline-none placeholder:text-fg-dim focus:border-border-focus"
+                            className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm text-fg outline-none placeholder:text-fg-dim focus:border-gray-400"
                         />
                     </div>
 
@@ -173,7 +173,7 @@ export function TeamPasswordManagement() {
                             maxLength={100}
                             autoComplete="new-password"
                             placeholder="Re-enter the new password"
-                            className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm text-fg outline-none placeholder:text-fg-dim focus:border-border-focus"
+                            className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm text-fg outline-none placeholder:text-fg-dim focus:border-gray-400"
                         />
                     </div>
 
@@ -286,7 +286,7 @@ export function DeactivatedUserActionsMenu({ userId, userName, userRole }: Deact
                                 maxLength={100}
                                 autoComplete="new-password"
                                 placeholder="Enter a unique password"
-                                className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm text-fg outline-none placeholder:text-fg-dim focus:border-border-focus"
+                                className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm text-fg outline-none placeholder:text-fg-dim focus:border-gray-400"
                             />
 
                             <p className="text-xs text-fg-muted">The password must be unique and cannot be the shared team password.</p>
@@ -333,7 +333,7 @@ export function PromoteUserControl({ userId }: PromoteUserControlProps) {
                 maxLength={100}
                 autoComplete="new-password"
                 placeholder="New manager password"
-                className="w-56 rounded-md border bg-input px-3 py-2 text-sm outline-none transition-colors placeholder:text-fg-dim focus:border-border-focus"
+                className="w-56 rounded-md border border-border bg-input px-3 py-2 text-sm outline-none transition-colors placeholder:text-fg-dim focus:border-gray-400"
             />
 
             <button
@@ -451,7 +451,7 @@ export function UserActionsMenu({ userId, userName, userRole }: UserActionsMenuP
                             maxLength={100}
                             autoComplete="new-password"
                             placeholder="Enter a unique password"
-                            className="w-full rounded-md border bg-input px-3 py-2.5 text-sm text-fg outline-non focus:border-border-focus"
+                            className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm text-fg outline-none focus:border-gray-400"
                         />
                     </div>
 

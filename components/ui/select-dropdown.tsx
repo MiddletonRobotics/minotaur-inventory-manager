@@ -40,7 +40,7 @@ export default function SelectDropdown<T extends SelectValue>({ value, options, 
                     aria-haspopup="menu"
                     aria-expanded={open}
                     aria-controls={open ? menuId : undefined}
-                    className="flex w-full items-center justify-between gap-4 rounded-md border border-border bg-input px-3 py-2.5 text-sm text-fg transition-colors hover:border-border-focus"
+                    className="flex w-full items-center justify-between gap-4 rounded-md border border-border bg-input px-3 py-2.5 text-sm text-fg outline-none transition-colors hover:border-border-focus focus-visible:border-gray-400"
                 >
                     <span className="truncate">{selected.label}</span>
                     <ChevronDown size={15} className={`shrink-0 text-fg-muted transition-transform ${open ? "rotate-180" : ""}`} />
@@ -66,7 +66,6 @@ export default function SelectDropdown<T extends SelectValue>({ value, options, 
                                 className={`${dropdownItemCSS} justify-between gap-4 ${isSelected ? "bg-input text-fg" : ""}`}
                             >
                                 <span>{option.label}</span>
-
                                 {isSelected && <Check size={14} className="shrink-0" />}
                             </button>
                         );

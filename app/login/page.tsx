@@ -26,7 +26,7 @@ export default function Login() {
                             required
                             placeholder="First Name"
                             autoComplete="given-name"
-                            className="w-full rounded-md bg-input px-2.5 py-2 text-base placeholder:text-fg-dim focus:outline-none"
+                            className="w-full rounded-md border border-border bg-input px-2.5 py-2 text-base placeholder:text-fg-dim outline-none transition-colors focus:border-gray-400"
                         />
                     </div>
 
@@ -41,7 +41,7 @@ export default function Login() {
                             required
                             placeholder="Last Name"
                             autoComplete="family-name"
-                            className="w-full rounded-md bg-input px-2.5 py-2 text-base placeholder:text-fg-dim focus:outline-none"
+                            className="w-full rounded-md border border-border bg-input px-2.5 py-2 text-base placeholder:text-fg-dim outline-none transition-colors focus:border-gray-400"
                         />
                     </div>
                 </div>
@@ -57,7 +57,7 @@ export default function Login() {
                         required
                         placeholder="Enter Password"
                         autoComplete="current-password"
-                        className="w-full rounded-md bg-input px-2.5 py-2 text-base placeholder:text-fg-dim focus:outline-none"
+                        className="w-full rounded-md border border-border bg-input px-2.5 py-2 text-base placeholder:text-fg-dim outline-none transition-colors focus:border-gray-400"
                     />
                 </div>
 

@@ -104,23 +104,30 @@ export function AddItemButton({ categoryId, categoryName, vendors, locations, na
                             <ItemFieldInputs fields={itemFields} nameTemplate={nameTemplate} />
                             <div className="space-y-2">
                                 <label className="block text-sm font-medium text-fg">Part Number</label>
-                                <input name="partNumber" required className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm text-fg" />
+                                <input name="partNumber" required className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm text-fg outline-none transition-colors focus:border-gray-400" />
                             </div>
 
                             <div className="space-y-2">
                                 <label className="block text-sm font-medium text-fg">Description</label>
-                                <textarea name="description" rows={3} className="w-full resize-none rounded-md border border-border bg-input px-3 py-2.5 text-sm text-fg" />
+                                <textarea name="description" rows={3} className="w-full resize-none rounded-md border border-border bg-input px-3 py-2.5 text-sm text-fg outline-none transition-colors focus:border-gray-400" />
                             </div>
 
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div className="space-y-2">
                                     <label className="block text-sm font-medium text-fg">Quantity</label>
-                                    <input name="quantity" type="number" required min={0} defaultValue={1} className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm text-fg" />
+                                    <input
+                                        name="quantity"
+                                        type="number"
+                                        required
+                                        min={0}
+                                        defaultValue={1}
+                                        className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm text-fg outline-none transition-colors focus:border-gray-400"
+                                    />
                                 </div>
 
                                 <div className="space-y-2">
                                     <label className="block text-sm font-medium text-fg">Vendor</label>
-                                    <select name="vendorId" required defaultValue="" className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm text-fg">
+                                    <select name="vendorId" required defaultValue="" className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm text-fg outline-none transition-colors focus:border-gray-400">
                                         <option value="" disabled>
                                             Select
                                         </option>
@@ -135,7 +142,7 @@ export function AddItemButton({ categoryId, categoryName, vendors, locations, na
 
                             <div className="space-y-2">
                                 <label className="block text-sm font-medium text-fg">Location</label>
-                                <select name="locationId" defaultValue="" className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm text-fg">
+                                <select name="locationId" defaultValue="" className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm text-fg outline-none transition-colors focus:border-gray-400">
                                     <option value="">Not Set</option>
                                     {locations.map((location) => (
                                         <option key={location.id} value={location.id}>
@@ -293,17 +300,17 @@ export function ItemActionsMenu({ item, categoryId, vendors, locations, nameTemp
                             <ItemFieldInputs fields={itemFields} nameTemplate={nameTemplate} initialName={item.name} initialValues={item.itemFieldValues} />
                             <div className="space-y-2">
                                 <label className="block text-sm font-medium text-fg">Part Number</label>
-                                <input name="partNumber" required defaultValue={item.partNumber} className="w-full rounded-md border bg-input px-3 py-2.5 text-sm text-fg" />
+                                <input name="partNumber" required defaultValue={item.partNumber} className="w-full rounded-md border border-border focus:border-gray-400 bg-input px-3 py-2.5 text-sm text-fg" />
                             </div>
 
                             <div className="space-y-2">
                                 <label className="block text-sm font-medium text-fg">Description</label>
-                                <textarea name="description" rows={3} defaultValue={item.description} className="w-full resize-none rounded-md border bg-input px-3 py-2.5 text-sm text-fg" />
+                                <textarea name="description" rows={3} defaultValue={item.description} className="w-full resize-none rounded-md border border-border focus:border-gray-400 bg-input px-3 py-2.5 text-sm text-fg" />
                             </div>
 
                             <div className="space-y-2">
                                 <label className="block text-sm font-medium text-fg">Vendor</label>
-                                <select name="vendorId" required defaultValue={item.vendorId} className="w-full rounded-md border bg-input px-3 py-2.5 text-sm text-fg">
+                                <select name="vendorId" required defaultValue={item.vendorId} className="w-full rounded-md border border-border focus:border-gray-400 bg-input px-3 py-2.5 text-sm text-fg">
                                     {vendors.map((vendor) => (
                                         <option key={vendor.id} value={vendor.id}>
                                             {vendor.name}
@@ -314,7 +321,7 @@ export function ItemActionsMenu({ item, categoryId, vendors, locations, nameTemp
 
                             <div className="space-y-2">
                                 <label className="block text-sm font-medium text-fg">Location</label>
-                                <select name="locationId" defaultValue={item.locationId ?? ""} className="w-full rounded-md border bg-input px-3 py-2.5 text-sm text-fg">
+                                <select name="locationId" defaultValue={item.locationId ?? ""} className="w-full rounded-md border border-border  bg-input px-3 py-2.5 text-sm text-fg">
                                     <option value="">Not Set</option>
                                     {locations.map((location) => (
                                         <option key={location.id} value={location.id}>
@@ -565,7 +572,7 @@ export function ItemFieldConfigurationForm({ categoryId, nameTemplate: initialNa
                     value={nameTemplate}
                     onChange={(event) => setNameTemplate(event.currentTarget.value)}
                     placeholder="{profile} {teeth} × {width} Belt"
-                    className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm text-fg outline-none placeholder:text-fg-dim focus:border-border-focus"
+                    className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm text-fg outline-none placeholder:text-fg-dim focus:border-gray-400"
                 />
 
                 <p className="text-xs text-fg-muted">Leave this blank to keep entering part names manually. Field units are appended automatically.</p>
@@ -609,7 +616,7 @@ export function ItemFieldConfigurationForm({ categoryId, nameTemplate: initialNa
                                                 });
                                             }}
                                             placeholder="Width"
-                                            className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm text-fg outline-none placeholder:text-fg-dim focus:border-border-focus"
+                                            className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm text-fg outline-none placeholder:text-fg-dim focus:border-gray-400"
                                         />
                                     </div>
 
@@ -624,7 +631,7 @@ export function ItemFieldConfigurationForm({ categoryId, nameTemplate: initialNa
                                                 })
                                             }
                                             placeholder="width"
-                                            className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm text-fg outline-none placeholder:text-fg-dim focus:border-border-focus read-only:cursor-not-allowed read-only:text-fg-dim"
+                                            className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm text-fg outline-none placeholder:text-fg-dim focus:border-gray-400 read-only:cursor-not-allowed read-only:text-fg-dim"
                                         />
                                     </div>
 
@@ -638,7 +645,7 @@ export function ItemFieldConfigurationForm({ categoryId, nameTemplate: initialNa
                                                     type: event.currentTarget.value as ItemFieldType,
                                                 })
                                             }
-                                            className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm text-fg outline-none focus:border-border-focus disabled:cursor-not-allowed disabled:text-fg-dim"
+                                            className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm text-fg outline-none focus:border-gray-400 disabled:cursor-not-allowed disabled:text-fg-dim"
                                         >
                                             <option value="TEXT">Text</option>
                                             <option value="INTEGER">Integer</option>
@@ -658,7 +665,7 @@ export function ItemFieldConfigurationForm({ categoryId, nameTemplate: initialNa
                                             }
                                             placeholder="mm, T, in..."
                                             maxLength={12}
-                                            className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm text-fg outline-none placeholder:text-fg-dim focus:border-border-focus"
+                                            className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm text-fg outline-none placeholder:text-fg-dim focus:border-gray-400"
                                         />
                                     </div>
                                 </div>
@@ -674,7 +681,7 @@ export function ItemFieldConfigurationForm({ categoryId, nameTemplate: initialNa
                                                 })
                                             }
                                             placeholder="HTD 5M, HTD 3M, GT2, GT3, XL"
-                                            className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm text-fg outline-none placeholder:text-fg-dim focus:border-border-focus"
+                                            className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm text-fg outline-none placeholder:text-fg-dim focus:border-gray-400"
                                         />
 
                                         <p className="text-xs text-fg-dim">Separate options with commas.</p>
@@ -842,7 +849,7 @@ export function ItemFieldInputs({ fields, nameTemplate, initialName = "", initia
                     <label htmlFor="part-name" className="block text-sm font-medium text-fg">
                         Part Name
                     </label>
-                    <input id="part-name" name="name" required defaultValue={initialName} className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm text-fg outline-none focus:border-border-focus" />
+                    <input id="part-name" name="name" required defaultValue={initialName} className="w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm text-fg outline-none focus:border-gray-400" />
                 </div>
             )}
         </>
