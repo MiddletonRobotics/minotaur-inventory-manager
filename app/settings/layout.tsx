@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Boxes, FolderKanban, Users } from "lucide-react";
+import { Boxes, FolderKanban, DatabaseBackup, Users } from "lucide-react";
 import { redirect } from "next/navigation";
 
 import Navbar from "@/components/navbar";
@@ -44,6 +44,12 @@ export default async function SettingsLayout({ children }: Readonly<{ children: 
                                     <FolderKanban size={18} />
                                     Projects
                                 </Link>
+                                {isAdministrator && (
+                                    <Link href="/settings/backups" className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm text-fg-muted transition-colors hover:bg-card hover:text-fg">
+                                        <DatabaseBackup size={18} />
+                                        Backups
+                                    </Link>
+                                )}
                             </nav>
                         </div>
                     </aside>
