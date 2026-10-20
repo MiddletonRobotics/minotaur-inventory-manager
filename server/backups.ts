@@ -1,12 +1,17 @@
 import "server-only";
 
-import { lstat, readdir } from "fs/promises";
+import { execFile } from "child_process";
+import { access, lstat, readdir } from "fs/promises";
 import path from "path";
+import { promisify } from "util";
 
 const backupDirectory = process.env.BACKUP_DIRECTORY ?? "";
 const backupFilePattern = /^minomanager-(\d{4})-(\d{2})-(\d{2})T(\d{2})-(\d{2})-(\d{2})Z\.dump$/;
+const execFileAsync = promisify(execFile);
+const backupScript = path.join(process.cwd(), "scripts", "backup-database.sh");
 
 export type DatabaseBackup = { fileName: string; createdAt: Date; sizeBytes: number; };
+export type CreateDatabaseBackupResult = { created: boolean; backup: DatabaseBackup | null; };
 type DatabaseBackupFile = DatabaseBackup & { filePath: string; };
 
 function parseBackupDate(fileName: string): Date | null {
@@ -96,4 +101,36 @@ export async function getDatabaseBackupFile(fileName: string): Promise<DatabaseB
         if (error instanceof Error && "code" in error && error.code === "ENOENT") return null;
         throw error;
     }
+}
+
+export async function createDatabaseBackup(): Promise<CreateDatabaseBackupResult> {
+    await access(backupScript);
+
+    const previousBackup = (await getDatabaseBackups())[0] ?? null;
+
+    try {
+        await execFileAsync(backupScript, [], {
+            cwd: process.cwd(),
+            timeout: 120_000,
+            maxBuffer: 1024 * 1024,
+            env: process.env,
+        });
+    } catch (error) {
+        console.error("Database backup script failed:", error);
+        throw new Error("The database backup could not be created.");
+    }
+
+    const newestBackup = (await getDatabaseBackups())[0] ?? null;
+
+    if (!newestBackup || newestBackup.fileName === previousBackup?.fileName) {
+        return {
+            created: false,
+            backup: newestBackup,
+        };
+    }
+
+    return {
+        created: true,
+        backup: newestBackup,
+    };
 }
