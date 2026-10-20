@@ -11,7 +11,7 @@ type CalloutProps = {
 const variantStyles: Record<CalloutVariant, { container: string; title: string }> = {
     error: {
         container: "border-red-900/70 border-l-red-600 bg-red-950/30",
-        title: "text-fgs",
+        title: "text-fg",
     },
 
     warning: {
@@ -21,7 +21,7 @@ const variantStyles: Record<CalloutVariant, { container: string; title: string }
 
     info: {
         container: "border-sky-900/70 border-l-sky-500 bg-sky-950/25",
-        title: "text-sku-100",
+        title: "text-sky-100",
     },
 };
 
