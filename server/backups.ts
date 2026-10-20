@@ -3,7 +3,7 @@ import "server-only";
 import { lstat, readdir } from "fs/promises";
 import path from "path";
 
-const backupDirectory = process.env.MINOMANAGER_BACKUP_DIR ?? "/var/lib/minotaur/backups/hourly";
+const backupDirectory = process.env.BACKUP_DIRECTORY ?? "";
 const backupFilePattern = /^minomanager-(\d{4})-(\d{2})-(\d{2})T(\d{2})-(\d{2})-(\d{2})Z\.dump$/;
 
 export type DatabaseBackup = { fileName: string; createdAt: Date; sizeBytes: number; };
