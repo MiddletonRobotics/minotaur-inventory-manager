@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import Callout from "@/components/ui/callout";
 import { getDatabaseBackups, type DatabaseBackup } from "@/server/backups";
+import CreateBackupButton from "@/components/backup-management";
 import { authenticate } from "@/server/session";
 
 function formatFileSize(bytes: number): string {
@@ -59,8 +60,13 @@ export default async function BackupSettings() {
             </div>
 
             <section className="border-b border-border py-8">
-                <h3 className="text-lg font-semibold text-fg">Automatic Database Backups</h3>
-                <p className="mt-1 text-sm text-fg-muted">MinoManager creates a PostgreSQL database backup every hour.</p>
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                        <h3 className="text-lg font-semibold text-fg">Automatic Database Backups</h3>
+                        <p className="mt-1 text-sm text-fg-muted">MinoManager creates a PostgreSQL database backup every hour.</p>
+                    </div>
+                    <CreateBackupButton />
+                </div>
 
                 {backupReadFailed ? (
                     <Callout variant="error" title="Backups could not be read." className="mt-6">
