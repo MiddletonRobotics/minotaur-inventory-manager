@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createDatabaseBackup } from "@/server/backups";
 import { authenticate } from "@/server/session";
 
-export type CreateBackupState = { status: | "idle" | "success" | "error"; message: string; };
+export type CreateBackupState = { status: "idle" | "success" | "error"; message: string };
 
 export async function createBackupAction(previousState: CreateBackupState): Promise<CreateBackupState> {
     const session = await authenticate();

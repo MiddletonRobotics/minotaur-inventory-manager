@@ -4,7 +4,7 @@ import { Readable } from "stream";
 import { getDatabaseBackupFile } from "@/server/backups";
 import { authenticate } from "@/server/session";
 
-export async function GET(_request: Request, { params }: { params: Promise<{fileName: string;}>; }) {
+export async function GET(_request: Request, { params }: { params: Promise<{ fileName: string }> }) {
     const session = await authenticate();
 
     if (!session) {

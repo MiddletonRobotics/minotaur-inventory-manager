@@ -23,9 +23,7 @@ export default function CreateBackupButton() {
                 </button>
             </form>
 
-            {state.message && (
-                <p className={`mt-2 max-w-xs text-right text-xs ${state.status === "error" ? "text-red-400" : "text-fg-muted"}`}>{state.message}</p>
-            )}
+            {state.message && <p className={`mt-2 max-w-xs text-right text-xs ${state.status === "error" ? "text-red-400" : "text-fg-muted"}`}>{state.message}</p>}
         </div>
     );
 }

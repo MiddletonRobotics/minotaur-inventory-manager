@@ -78,14 +78,18 @@ export default async function BackupSettings() {
                         <p className="mt-1 font-medium text-fg">{formatBackupDate(latestBackup)}</p>
                     </div>
                 ) : (
-                    <Callout variant="info" title="No backups are available yet." className="mt-6">No automatic database backup files were found on this server.</Callout>
+                    <Callout variant="info" title="No backups are available yet." className="mt-6">
+                        No automatic database backup files were found on this server.
+                    </Callout>
                 )}
             </section>
 
             <section className="py-8">
                 <div>
                     <h3 className="text-lg font-semibold text-fg">Recent Backups</h3>
-                    <p className="mt-1 text-sm text-fg-muted">{backups.length}{" "}{backups.length === 1 ? "backup" : "backups"}{" "}currently stored on the server.</p>
+                    <p className="mt-1 text-sm text-fg-muted">
+                        {backups.length} {backups.length === 1 ? "backup" : "backups"} currently stored on the server.
+                    </p>
                 </div>
 
                 {!backupReadFailed && backups.length > 0 ? (
@@ -99,7 +103,7 @@ export default async function BackupSettings() {
 
                                 <div className="flex shrink-0 items-center gap-6">
                                     <span className="text-sm text-fg-muted">{formatFileSize(backup.sizeBytes)}</span>
-                                    <a 
+                                    <a
                                         href={`/api/backups/${encodeURIComponent(backup.fileName)}`}
                                         className="rounded-md border border-border px-3 py-1.5 text-sm text-fg-muted transition-colors hover:border-border-focus hover:bg-card hover:text-fg"
                                     >
