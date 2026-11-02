@@ -80,14 +80,14 @@ export async function createDatabaseBackup(): Promise<CreateDatabaseBackupResult
         cwd: process.cwd(),
         timeout: 180_000,
         maxBuffer: 1024 * 1024,
-        env: { ...process.env, MINOMANAGER_BACKUP_DIR: backupDirectory },
+        env: { ...process.env, BACKUP_DIRECTORY: backupDirectory },
     });
 
-    if (stdout.includes("MINOMANAGER_BACKUP_STATUS=BUSY")) {
+    if (stdout.includes("BACKUP_STATUS=BUSY")) {
         return { status: "busy" };
     }
 
-    const fileMatch = stdout.match(/^MINOMANAGER_BACKUP_FILE=(.+)$/m);
+    const fileMatch = stdout.match(/^BACKUP_FILE=(.+)$/m);
 
     if (!fileMatch) {
         console.error("Backup script did not report a created backup.", { stdout, stderr });
