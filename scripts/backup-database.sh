@@ -2,12 +2,12 @@
 
 set -Eeuo pipefail
 
-PROJECT_DIRECTORY="${MINOMANAGER_PROJECT_DIRECTORY:-/home/hecker/minotaur-inventory-manager}"
-ENV_FILE="${MINOMANAGER_ENV_FILE:-$PROJECT_DIRECTORY/.env}"
-BACKUP_DIRECTORY="${MINOMANAGER_BACKUP_DIRECTORY:-/var/lib/minotaur/backups/hourly}"
+PROJECT_DIRECTORY="${PROJECT_DIRECTORY:-/home/hecker/minotaur-inventory-manager}"
+ENV_FILE="${ENV_FILE:-$PROJECT_DIRECTORY/.env}"
+BACKUP_DIRECTORY="${BACKUP_DIRECTORY:-/var/lib/minotaur/backups/hourly}"
 
 # Seven days of hourly backups.
-RETENTION_MINUTES="${MINOMANAGER_BACKUP_RETENTION_MINUTES:-10080}"
+RETENTION_MINUTES="${BACKUP_RETENTION_MINUTES:-10080}"
 
 umask 077
 
@@ -28,11 +28,11 @@ exec 9>"$BACKUP_DIRECTORY/.backup.lock"
 
 if ! flock -n 9; then
     echo "[backup] Another backup is already running."
+    echo "BACKUP_STATUS=BUSY"
     exit 0
 fi
 
-DIRECT_URL="$(
-    python3 - "$ENV_FILE" <<'PY'
+DIRECT_URL="$(python3 - "$ENV_FILE" <<'PY'
 from pathlib import Path
 import sys
 
@@ -104,3 +104,5 @@ BACKUP_SIZE="$(du -h "$FINAL_FILE" | cut -f1)"
 echo "[backup] Backup completed successfully."
 echo "[backup] File: $FINAL_FILE"
 echo "[backup] Size: $BACKUP_SIZE"
+echo "BACKUP_STATUS=CREATED"
+echo "BACKUP_FILE=$FINAL_FILE"
