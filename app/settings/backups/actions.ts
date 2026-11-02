@@ -28,7 +28,7 @@ export async function createBackupAction(previousState: CreateBackupState): Prom
 
         return { status: "success", message: "Database backup created successfully." };
     } catch (error) {
-        console.error("Failed to create database backup:", error );
+        console.error("Failed to create database backup:", error);
 
         return { status: "error", message: "The database backup could not be created. Check the server logs for details." };
     }

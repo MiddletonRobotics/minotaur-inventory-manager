@@ -16,11 +16,11 @@ export type DatabaseBackup = {
     sizeBytes: number;
 };
 
-type DatabaseBackupFile = DatabaseBackup & { filePath: string; };
-export type CreateDatabaseBackupResult = | { status: "created"; backup: DatabaseBackup; } | { status: "busy"; };
+type DatabaseBackupFile = DatabaseBackup & { filePath: string };
+export type CreateDatabaseBackupResult = { status: "created"; backup: DatabaseBackup } | { status: "busy" };
 
 export function isValidBackupFileName(fileName: string): boolean {
-    return (path.basename(fileName) === fileName && backupFilePattern.test(fileName));
+    return path.basename(fileName) === fileName && backupFilePattern.test(fileName);
 }
 
 async function getBackupMetadata(fileName: string): Promise<DatabaseBackupFile | null> {
@@ -57,17 +57,16 @@ export async function getDatabaseBackups(): Promise<DatabaseBackup[]> {
         throw error;
     }
 
-    const backups = await Promise.all(
-        entries
-        	.filter((entry) => entry.isFile() && isValidBackupFileName(entry.name))
-            .map((entry) => getBackupMetadata(entry.name)),
-        );
+    const backups = await Promise.all(entries.filter((entry) => entry.isFile() && isValidBackupFileName(entry.name)).map((entry) => getBackupMetadata(entry.name)));
 
-    return backups.filter((backup): backup is DatabaseBackupFile => backup !== null).map(({ fileName, createdAt, sizeBytes }) => ({
-        fileName,
-        createdAt,
-        sizeBytes,
-    })).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return backups
+        .filter((backup): backup is DatabaseBackupFile => backup !== null)
+        .map(({ fileName, createdAt, sizeBytes }) => ({
+            fileName,
+            createdAt,
+            sizeBytes,
+        }))
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 }
 
 export async function getDatabaseBackupFile(fileName: string): Promise<DatabaseBackupFile | null> {
@@ -78,12 +77,11 @@ export async function createDatabaseBackup(): Promise<CreateDatabaseBackupResult
     await access(backupScript);
 
     const { stdout, stderr } = await execFileAsync(backupScript, [], {
-            cwd: process.cwd(),
-            timeout: 180_000,
-            maxBuffer: 1024 * 1024,
-            env: { ...process.env, MINOMANAGER_BACKUP_DIR: backupDirectory },
-        },
-    );
+        cwd: process.cwd(),
+        timeout: 180_000,
+        maxBuffer: 1024 * 1024,
+        env: { ...process.env, MINOMANAGER_BACKUP_DIR: backupDirectory },
+    });
 
     if (stdout.includes("MINOMANAGER_BACKUP_STATUS=BUSY")) {
         return { status: "busy" };
@@ -97,11 +95,9 @@ export async function createDatabaseBackup(): Promise<CreateDatabaseBackupResult
         throw new Error("Backup script completed without reporting a backup file.");
     }
 
-    const fileName =
-        path.basename(fileMatch[1].trim());
+    const fileName = path.basename(fileMatch[1].trim());
 
-    const backup =
-        await getBackupMetadata(fileName);
+    const backup = await getBackupMetadata(fileName);
 
     if (!backup) {
         throw new Error(`Backup was created but could not be found: ${fileName}`);
